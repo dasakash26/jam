@@ -1,24 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SearchSong } from '#/components/SongSearch'
-import { ModeToggle } from '#/components/mode-toggle'
-import { PlayIcon } from 'lucide-react'
+import { Header } from '#/components/Header'
+import { MusicCard } from '#/components/MusicCard'
+import { QueueCard } from '#/components/QueueCard'
+import { MusicController } from '#/components/MusicController'
 
 export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
   return (
-    <div className="p-8">
-      <div className="flex justify-between border-2 p-2 rounded-lg">
-        <div className='flex space-x-2'>
-          <PlayIcon className="border-2 w-10 h-10 p-1 rounded-2xl hover:scale-104" />
-          <h1 className="text-4xl font-bold">JAM</h1>
-        </div>
-        <div className="flex space-x-2 align-middle">
-          <ModeToggle />
-          <SearchSong />
-        </div>
+    <div className="mx-auto flex h-dvh max-h-dvh w-full max-w-7xl flex-col justify-between gap-6 overflow-hidden p-6 font-mono md:p-8">
+      <Header />
+      <div className="my-2 flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-6 md:flex-row">
+        <MusicCard />
+        <QueueCard />
       </div>
-      <p className="mt-4 text-lg max-w-xl ">Songs</p>
+      <MusicController />
     </div>
   )
 }

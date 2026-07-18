@@ -1,13 +1,52 @@
-# TODO:
----
-[] Improve Search UI with loaders and better cards
-[] Music Info card
-[] Queue & Its component
-[] Music Player and controlls
-[] Fix the header component
+# JAM TODO
 
+## Now
 
-Welcome to your new TanStack Start app! 
+- [x] Build main header, search, music card, queue, and player controls.
+- [ ] Fix mobile layout for the card/queue/player stack.
+- [ ] Add empty, loading, and error states for search, queue, stream failures, and playback failures.
+- [ ] Replace console logs with user-visible errors or quiet debug-only logging.
+- [ ] Add basic keyboard support: play/pause, next, previous, volume.
+- [ ] Add tests for queue actions: add track, next track, previous track, empty queue.
+
+## State Persistence
+
+- [ ] Persist local player state with Zustand `persist`.
+- [ ] Save `queue`, `history`, current track id, volume, repeat/shuffle mode, and last progress timestamp.
+- [ ] Do not persist short-lived state like `query`, `results`, `isLoading`, and stream URLs.
+- [ ] Add a state version number so old saved state can be migrated or discarded cleanly.
+- [ ] Restore playback state on app load without autoplaying unexpectedly.
+
+## Multi-Client Sync
+
+- [ ] Introduce a shared `jamId` / room id so multiple browsers can join the same JAM session.
+- [ ] Move canonical session state to the server: queue, history, current track, playback status, position, updatedAt, and controller id.
+- [ ] Add WebSocket sync for real-time updates between clients.
+- [ ] Broadcast state events: `queue:add`, `queue:remove`, `track:play`, `track:pause`, `track:seek`, `track:next`, `track:previous`, `volume:set`, and `client:join`.
+- [ ] On client join, fetch a full session snapshot first, then subscribe to live events.
+- [ ] Use server timestamps to compute playback position drift across clients.
+- [ ] Decide control rules: everyone can control, host-only control, or request-to-control.
+- [ ] Add reconnect handling that resyncs from the latest server snapshot.
+
+## Server Storage
+
+- [ ] Add session APIs: create session, get session snapshot, update queue, update playback state.
+- [ ] Store active sessions in memory for local dev.
+- [ ] Use durable storage for production sessions, such as Redis, Postgres, SQLite/D1, or Cloudflare Durable Objects.
+- [ ] Add TTL cleanup for inactive JAM sessions.
+- [ ] Cache music search results and stream metadata to reduce repeated `yt-dlp`/YouTube calls.
+
+## Future Improvements
+
+- [ ] Add drag-and-drop queue reordering.
+- [ ] Add voting/up-next mode for shared rooms.
+- [ ] Add recently played and favorites.
+- [ ] Add better audio metadata: album art, uploader, duration, source, and quality.
+- [ ] Add responsive compact player for small screens.
+- [ ] Add accessibility pass for labels, focus states, and contrast.
+- [ ] Add visual polish: smoother player transitions, queue item active state, and consistent spacing.
+
+Welcome to your new TanStack Start app!
 
 # Getting Started
 
@@ -49,7 +88,6 @@ If you prefer not to use Tailwind CSS:
 
 ## Linting & Formatting
 
-
 This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
 
 ```bash
@@ -57,7 +95,6 @@ bun --bun run lint
 bun --bun run format
 bun --bun run check
 ```
-
 
 ## Deploy to Cloudflare Workers
 
@@ -70,8 +107,6 @@ This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) an
 For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
 
 KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
-
-
 
 ## Routing
 
@@ -90,7 +125,7 @@ Now that you have two routes you can use a `Link` component to navigate between 
 To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
 
 ```tsx
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router'
 ```
 
 Then anywhere in your JSX you can use it like so:
@@ -158,11 +193,11 @@ const getServerTime = createServerFn({
 // Use in a component
 function MyComponent() {
   const [time, setTime] = useState('')
-  
+
   useEffect(() => {
     getServerTime().then(setTime)
   }, [])
-  
+
   return <div>Server time: {time}</div>
 }
 ```

@@ -1,5 +1,4 @@
-
-@import "tailwindcss";
+@import 'tailwindcss';
 
 * {
   box-sizing: border-box;
@@ -8,10 +7,100 @@
 html,
 body,
 #app {
+  height: 100%;
   min-height: 100%;
 }
 
 body {
   margin: 0;
+  background:
+    radial-gradient(
+      circle at 15% 20%,
+      rgba(99, 102, 241, 0.08) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      rgba(20, 184, 166, 0.06) 0%,
+      transparent 45%
+    ),
+    var(--color-background);
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(139, 92, 246, 0.04) 0%,
+    transparent 50%
+  );
+  animation: rotateBg 60s linear infinite;
+  z-index: -1;
+  pointer-events: none;
 }
 
+@keyframes rotateBg {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.rhap_container {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.rhap_main {
+  gap: 8px !important;
+}
+.rhap_controls-section {
+  margin-top: 0 !important;
+}
+.rhap_progress-section {
+  margin-bottom: 4px !important;
+}
+.rhap_progress-bar {
+  background-color: var(--color-border) !important;
+}
+.rhap_progress-filled {
+  background-color: var(--color-primary) !important;
+}
+.rhap_progress-indicator {
+  background-color: var(--color-primary) !important;
+}
+.rhap_button-clear {
+  color: var(--color-foreground) !important;
+}
+.rhap_time {
+  color: var(--color-muted-foreground) !important;
+  font-family: monospace !important;
+  font-size: 10px !important;
+}
+.rhap_volume-button {
+  color: var(--color-muted-foreground) !important;
+}
+.rhap_volume-bar {
+  background-color: var(--color-border) !important;
+}
+.rhap_volume-indicator {
+  background-color: var(--color-primary) !important;
+}
+
+/* Force standard 1:1 aspect ratio and crop stretched images */
+img.rounded-full,
+img.rounded-lg,
+.rounded-full img,
+.rounded-lg img {
+  object-fit: cover !important;
+  aspect-ratio: 1 / 1 !important;
+}

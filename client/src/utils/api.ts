@@ -1,8 +1,8 @@
-import type { Song } from '#/types'
+import type { Music } from '#/types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787'
 
-export async function searchSongs(query: string) {
+export async function searchMusic(query: string) {
   const res = await fetch(
     `${API_URL}/api/search?q=${encodeURIComponent(query)}`,
   )
@@ -12,7 +12,7 @@ export async function searchSongs(query: string) {
   }
 
   const resj = await res.json()
-  const songs: Song[] = resj.map((raw: any) => ({
+  const musicList: Music[] = resj.map((raw: any) => ({
     id: raw.id,
     title: raw.title,
     uploader: raw.uploader || raw.channel,
@@ -20,5 +20,9 @@ export async function searchSongs(query: string) {
     thumbnailUrl: raw.thumbnails?.[raw.thumbnails.length - 1]?.url || '',
   }))
 
-  return songs
+  return musicList
+}
+
+export function getStreamUrl(songId: string) {
+  return `${API_URL}/api/stream/${songId}`
 }
