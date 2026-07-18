@@ -1,16 +1,23 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-import songRouter from "./routes/songs"
+import songRouter from "./routes/songs";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 
 app
-  .use(logger())
+  .use(
+    logger(),
+    cors({
+      origin: "*",
+    }),
+  )
   .get("/", async (c) => {
     return c.text("Hello Hono!");
-  }).route("/api",songRouter)
+  })
+  .route("/api", songRouter);
 
 export default {
   fetch: app.fetch,
-  port: 8787,
+  port: Number(process.env.PORT) || 8787,
 };

@@ -1,3 +1,12 @@
+# TODO:
+---
+[] Improve Search UI with loaders and better cards
+[] Music Info card
+[] Queue & Its component
+[] Music Player and controlls
+[] Fix the header component
+
+
 Welcome to your new TanStack Start app! 
 
 # Getting Started

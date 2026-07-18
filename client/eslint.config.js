@@ -6,7 +6,7 @@ export default [
   ...tanstackConfig,
   {
     rules: {
-      'import/no-cycle': 'off',
+      'import/no-cycle': 'warn',
       'import/order': 'off',
       'sort-imports': 'off',
       '@typescript-eslint/array-type': 'off',
