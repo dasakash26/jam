@@ -35,14 +35,16 @@ const router = new Hono()
         headers,
       });
 
+      const resHeaders = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": res.headers.get("Content-Type") ?? "audio/webm",
+        "Content-Length": res.headers.get("Content-Length") ?? "",
+        "Content-Range": res.headers.get("Content-Range") ?? "",
+      };
+
       return new Response(res.body, {
         status: res.status,
-        headers: {
-          "Content-Type": res.headers.get("Content-Type") ?? "audio/webm",
-          "Content-Length": res.headers.get("Content-Length") ?? "",
-          "Content-Range": res.headers.get("Content-Range") ?? "",
-          "Accept-Ranges": "bytes",
-        },
+        headers: resHeaders,
       });
     } catch (e: any) {
       console.log(e);

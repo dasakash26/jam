@@ -46,7 +46,7 @@ export function QueueCard() {
                     History
                   </h3>
                   {hist.map((song: Music, i: number) => (
-                    <QMusicCard key={`queue-${i}-${song.id}`} song={song} />
+                    <QItemCard key={`queue-${i}-${song.id}`} song={song} />
                   ))}
                 </div>
               )}
@@ -57,7 +57,7 @@ export function QueueCard() {
                   <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-primary">
                     Now Playing
                   </h3>
-                  <QMusicCard key="current" song={current} />
+                  <QItemCard key="current" song={current} />
                 </div>
               )}
 
@@ -68,7 +68,7 @@ export function QueueCard() {
                     Upcoming
                   </h3>
                   {upcoming.map((song: Music, i: number) => (
-                    <QMusicCard key={`queue-${i}-${song.id}`} song={song} />
+                    <QItemCard key={`queue-${i}-${song.id}`} song={song} />
                   ))}
                 </div>
               )}
@@ -80,11 +80,10 @@ export function QueueCard() {
   )
 }
 
-function QMusicCard({ key, song }: { key: string; song: Music }) {
+function QItemCard({ song }: { key: string; song: Music }) {
   const { pushToQueue } = useMusicPlayer()
   return (
     <div
-      key={key}
       className="flex items-center justify-between gap-4 rounded-lg p-2"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">

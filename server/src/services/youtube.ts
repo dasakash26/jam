@@ -29,7 +29,7 @@ export async function getStreamUrl(songId: string) {
     "-f",
     "bestaudio",
     "--extractor-args",
-    "youtube:player_client=default,-tv,web_safari,web_embedded",
+    "youtube:player_client=mweb,ios,android,web",
     `https://youtu.be/${songId}`,
   ]);
 }
