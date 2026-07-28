@@ -1,0 +1,28 @@
+name: jam
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: jam-server
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./server/src:/app/src
+      - ./server/cookie.text:/app/cookie.text
+    environment:
+      - PORT=8787
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: jam-client
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client/src:/app/src
+    environment:
+      - PORT=3000
+      - VITE_SERVER_URL=http://server:8787

@@ -18,7 +18,7 @@ WIP: SPOTIFY JAM (But free and with more features)
 - [ ] Mobile responsive layout & compact player stack
 - [ ] Drag & drop queue reordering
 
-- [ ] Fix: yt-dlp rate limiting
+- [x] Fix: yt-dlp rate limiting
 - [ ] Basic multiclient sync via polling
 - [ ] Real time multiclient sync via WebSockets (`/jam/:roomId`)
 - [ ] Host control permissions & song upvoting for rooms

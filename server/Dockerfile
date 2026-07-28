@@ -1,7 +1,7 @@
 FROM oven/bun:debian AS base
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y python3 curl unzip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 curl unzip ffmpeg && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deno.land/install.sh | sh && \
   mv /root/.deno/bin/deno /usr/local/bin/deno
@@ -16,5 +16,5 @@ COPY . .
 
 EXPOSE 8787
 ENV PORT=8787
-CMD ["bun", "src/index.ts"]
+CMD ["bun", "dev"]
 

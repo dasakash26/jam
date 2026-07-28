@@ -8,12 +8,23 @@ import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 
 const config = defineConfig({
+  server: {
+    host: true,
+    port: 3000,
+    watch: { usePolling: true },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_SERVER_URL || 'http://server:8787',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
+    tanstackStart(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tailwindcss(),
-    tanstackStart(),
     viteReact(),
   ],
 })
