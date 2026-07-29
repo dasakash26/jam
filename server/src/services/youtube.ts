@@ -42,10 +42,13 @@ async function runYtDlp(args: string[]): Promise<string> {
 }
 
 export async function search(query: string) {
+  const hasAudioKeyword = /\b(song|music|audio|track|remix|lyrics|official|video)\b/i.test(query);
+  const searchQuery = hasAudioKeyword ? query : `${query} song`;
+
   const stdout = await runYtDlp([
     "--flat-playlist",
     "-J",
-    `ytsearch10:${query + " songs only"}`,
+    `ytsearch10:${searchQuery}`,
   ]);
   try {
     return JSON.parse(stdout).entries || [];

@@ -1,74 +1,84 @@
 import { Card, CardHeader, CardTitle } from './ui/card'
 import { ScrollArea } from './ui/scroll-area'
-import { ListMusic } from 'lucide-react'
+import { ListMusic, Trash2 } from 'lucide-react'
 import { useMusicPlayer } from '#/store/musicPlayer'
 import type { Music } from '#/types'
-import { Button } from '@base-ui/react'
+import { QItemCard } from './QItemCard'
 
 const EmptyQ = () => (
-  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6">
-    <ListMusic className="mb-2 text-muted-foreground/40" />
-    <CardTitle className="text-sm font-semibold">Queue is empty</CardTitle>
+  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8">
+    <ListMusic className="text-muted-foreground/40" />
+    <CardTitle className="text-sm text-muted-foreground">Queue is empty</CardTitle>
   </div>
 )
 
-const formatDuration = (time: number) => {
-  if (isNaN(time)) return '00:00'
-  const mins = Math.floor(time / 60)
-  const secs = Math.floor(time % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
 export function QueueCard() {
-  const { queue: q, history: hist } = useMusicPlayer()
+  const { queue: q, history: hist, clearQueue, clearHistory } = useMusicPlayer()
   const upcoming = q.slice(1)
   const current = q[0]
   const hasContent = hist.length > 0 || q.length > 0
 
   return (
-    <Card className="h-140 min-h-0 w-full max-w-lg flex-1 rounded-3xl">
-      <CardHeader className="border-b py-4">
-        <CardTitle className="flex items-center gap-2 font-bold tracking-wider text-foreground">
-          <ListMusic className="h-4 w-4 text-primary" />
+    <Card className="flex flex-col flex-1 h-full min-h-[40vh] sm:min-h-0 w-full max-w-lg jam-card jam-card-hover">
+      <CardHeader className="flex flex-row items-center justify-between py-4 px-6">
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          <ListMusic className="h-4 w-4 text-muted-foreground" />
           Queue
         </CardTitle>
+        {q.length > 1 && (
+          <button
+            onClick={clearQueue}
+            className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors cursor-pointer p-1.5 sm:p-0 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <Trash2 className="h-3 w-3" />
+            Clear Queue
+          </button>
+        )}
       </CardHeader>
-      <ScrollArea className="flex-1 min-h-0 pb-6">
-        <div className="flex flex-col gap-6 px-6 pt-4">
+      <ScrollArea className="flex-1 min-h-0 pb-6 max-h-[55vh] sm:max-h-none">
+        <div className="flex flex-col gap-6 px-4 sm:px-6">
           {!hasContent ? (
             <EmptyQ />
           ) : (
             <>
-              {/* History Section */}
               {hist.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    History
-                  </h3>
-                  {hist.map((song: Music, i: number) => (
-                    <QItemCard key={`queue-${i}-${song.id}`} song={song} />
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                      History
+                    </h3>
+                    <button
+                      onClick={clearHistory}
+                      className="text-xs sm:text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-1.5 sm:p-0 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {hist.slice(-3).map((song: Music, idx: number) => (
+                    <QItemCard key={`hist-${song.id}-${idx}`} song={song} isHistory />
                   ))}
                 </div>
               )}
 
-              {/* Now Playing Section */}
-              {q.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-primary">
-                    Now Playing
-                  </h3>
-                  <QItemCard key="current" song={current} />
+              {q.length > 0 && current && (
+                <div className="flex flex-col gap-1.5 p-2 sm:p-1.5 rounded-xl bg-muted/40 border border-border/50">
+                  <div className="flex items-center gap-2 px-2.5 pt-1 sm:pt-0.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    <h3 className="text-sm sm:text-xs font-semibold text-foreground">
+                      Now Playing
+                    </h3>
+                  </div>
+                  <QItemCard song={current} isCurrent queueIndex={0} />
                 </div>
               )}
 
-              {/* Upcoming Section */}
               {upcoming.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Upcoming
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="px-1 text-xs sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    Upcoming ({upcoming.length})
                   </h3>
-                  {upcoming.map((song: Music, i: number) => (
-                    <QItemCard key={`queue-${i}-${song.id}`} song={song} />
+                  {upcoming.map((song: Music, idx: number) => (
+                    <QItemCard key={`${song.id}-${idx}`} song={song} canRemove queueIndex={idx + 1} />
                   ))}
                 </div>
               )}
@@ -77,41 +87,5 @@ export function QueueCard() {
         </div>
       </ScrollArea>
     </Card>
-  )
-}
-
-function QItemCard({ song }: { key: string; song: Music }) {
-  const { pushToQueue } = useMusicPlayer()
-  return (
-    <div
-      className="flex items-center justify-between gap-4 rounded-lg p-2"
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Button
-          className="cursor-pointer"
-          onClick={() => {
-            pushToQueue(song)
-          }}
-        >
-          <img
-            src={song.thumbnailUrl}
-            alt={song.title}
-            className="h-9 w-9 shrink-0 rounded-lg object-cover shadow-sm"
-          />
-        </Button>
-
-        <div className="min-w-0 flex-1 text-left">
-          <h4 className="truncate text-xs font-semibold text-foreground">
-            {song.title}
-          </h4>
-          <p className="text-[10px] text-muted-foreground truncate">
-            {song.uploader}
-          </p>
-        </div>
-      </div>
-      <span className="shrink-0 select-none pr-1 text-[10px] text-muted-foreground">
-        {formatDuration(song.duration)}
-      </span>
-    </div>
   )
 }

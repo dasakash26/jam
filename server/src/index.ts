@@ -10,6 +10,7 @@ app
     logger(),
     cors({
       origin: "*",
+      exposeHeaders: ["Content-Length", "Content-Range", "Accept-Ranges"],
     }),
   )
   .get("/", async (c) => {

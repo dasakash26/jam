@@ -36,17 +36,21 @@ const router = new Hono()
 
       let res = await fetch(url, {
         headers,
+        signal: c.req.raw.signal,
       });
 
       if (res.status === 403 || res.status === 404) {
+        res.body?.cancel();
         invalidateCache(songId);
         url = await getStreamUrl(songId);
         res = await fetch(url, {
           headers,
+          signal: c.req.raw.signal,
         });
       }
 
       if (!res.ok) {
+        res.body?.cancel();
         return c.json(
           { error: `Upstream error: ${res.statusText}` },
           res.status as any

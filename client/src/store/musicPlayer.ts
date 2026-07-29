@@ -1,6 +1,8 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { searchMusic } from '#/utils/api'
 import type { Music } from '#/types'
+import { toast } from 'sonner'
 
 interface MusicPlayer {
   query: string
@@ -10,70 +12,119 @@ interface MusicPlayer {
   history: Music[]
   error: string
   isError: boolean
+  hasHydrated: boolean
+  setHasHydrated: (h: boolean) => void
   setQuery: (q: string) => void
-  executeQuery: (q: string) => void
+  executeQuery: () => void
   pushToQueue: (m: Music) => void
   popFromQueue: () => void
   playPrevious: () => void
+  clearQueue: () => void
+  removeFromQueue: (index: number) => void
+  clearHistory: () => void
 }
 
 let searchTimeoutId: ReturnType<typeof setTimeout> | undefined
 
-export const useMusicPlayer = create<MusicPlayer>((set, get) => ({
-  query: '',
-  results: [] as Music[],
-  isLoading: false,
-  queue: [] as Music[],
-  history: [] as Music[],
-  error: '',
-  isError: false,
+export const useMusicPlayer = create<MusicPlayer>()(
+  persist(
+    (set, get) => ({
+      query: '',
+      results: [] as Music[],
+      isLoading: false,
+      queue: [] as Music[],
+      history: [] as Music[],
+      error: '',
+      isError: false,
+      hasHydrated: false,
 
-  setQuery: (q: string) => {
-    set({ query: q })
-    get().executeQuery(q)
-  },
+      setHasHydrated: (h: boolean) => set({ hasHydrated: h }),
 
-  executeQuery: async (q: string) => {
-    if (searchTimeoutId) clearTimeout(searchTimeoutId)
+      setQuery: (q: string) => {
+        set({ query: q })
+        get().executeQuery()
+      },
 
-    if (!q.trim()) {
-      set({ results: [], isLoading: false, isError: false })
-      return
-    }
+      executeQuery: async () => {
+        if (searchTimeoutId) clearTimeout(searchTimeoutId)
+        const q = get().query
 
-    set({ isLoading: true })
-    searchTimeoutId = setTimeout(async () => {
-      try {
-        const res = await searchMusic(q)
-        console.log(res)
-        set({ results: res, isLoading: false, isError: false })
-      } catch (e) {
-        set({ error: String(e), isLoading: false, isError: true })
-      }
-    }, 400)
-  },
+        if (!q) {
+          set({ results: [], isLoading: false, isError: false })
+          return
+        }
 
-  pushToQueue: (m: Music) => {
-    set((s) => ({ queue: [...s.queue, m] }))
-  },
+        set({ isLoading: true })
+        searchTimeoutId = setTimeout(async () => {
+          try {
+            const res = await searchMusic(q)
+            if (get().query != q) return
+            set({ results: res, isLoading: false, isError: false })
+            toast.success(`Results for "${q}"`, {
+              description: `${res.length} ${res.length === 1 ? 'track' : 'tracks'} ready to play`,
+            })
+          } catch (e) {
+            set({ error: String(e), isLoading: false, isError: true })
+          }
+        }, 400)
+      },
 
-  popFromQueue: () => {
-    const q = get().queue
-    if (q.length === 0) return
-    const current = q[0]
-    set((s) => ({
-      history: [...s.history, current],
-      queue: s.queue.slice(1)
-    }))
-  },
+      pushToQueue: (m: Music) => {
+        set((s) => ({ queue: [...s.queue, m] }))
+        toast('Added to Queue', {
+          icon: '🎵',
+          description: `${m.title} • ${m.uploader}`,
+        })
+      },
 
-  playPrevious: () => {
-    const hist = get().history
-    if (hist.length === 0) return
-    const prev = hist[hist.length - 1]
-    set((s) => ({
-      history: s.history.slice(0, -1),
-      queue: [prev, ...s.queue]
-    }))
-  }
-}))
+      popFromQueue: () => {
+        set((s) => {
+          if (s.queue.length === 0) return s
+          const [cur, ...rem] = s.queue
+          return { history: [...s.history, cur], queue: rem }
+        })
+      },
+
+      playPrevious: () => {
+        set((s) => {
+          if (s.history.length === 0) return s
+          const prev = s.history[s.history.length - 1]
+          return {
+            history: s.history.slice(0, -1),
+            queue: [prev, ...s.queue],
+          }
+        })
+      },
+
+      clearQueue: () => {
+        set((s) => ({
+          queue: s.queue.slice(0, 1),
+        }))
+        toast.info('Queue cleared')
+      },
+
+      removeFromQueue: (index: number) => {
+        set((s) => {
+          const newQ = [...s.queue]
+          newQ.splice(index, 1)
+          return { queue: newQ }
+        })
+      },
+
+      clearHistory: () => {
+        set({ history: [] })
+        toast.info('History cleared')
+      },
+    }),
+    {
+      name: 'localQ',
+      partialize: (s) => ({
+        queue: s.queue,
+        history: s.history,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
+    },
+  ),
+)

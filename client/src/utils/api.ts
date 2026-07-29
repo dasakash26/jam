@@ -16,7 +16,7 @@ export async function searchMusic(query: string) {
     id: raw.id,
     title: raw.title,
     uploader: raw.uploader || raw.channel,
-    duration: raw.duration,
+    duration: Number(raw.duration) || 0,
     thumbnailUrl: raw.thumbnails?.[raw.thumbnails.length - 1]?.url || '',
   }))
 
