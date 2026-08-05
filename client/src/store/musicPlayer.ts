@@ -17,6 +17,7 @@ interface MusicPlayer {
   setQuery: (q: string) => void
   executeQuery: () => void
   pushToQueue: (m: Music) => void
+  playNextTrack: (m: Music) => void
   popFromQueue: () => void
   playPrevious: () => void
   clearQueue: () => void
@@ -72,7 +73,17 @@ export const useMusicPlayer = create<MusicPlayer>()(
       pushToQueue: (m: Music) => {
         set((s) => ({ queue: [...s.queue, m] }))
         toast('Added to Queue', {
-          icon: '🎵',
+          description: `${m.title} • ${m.uploader}`,
+        })
+      },
+
+      playNextTrack: (m: Music) => {
+        set((s) => {
+          if (s.queue.length === 0) return { queue: [m] }
+          const newQ = [s.queue[0], m, ...s.queue.slice(1)]
+          return { queue: newQ }
+        })
+        toast('Playing Next', {
           description: `${m.title} • ${m.uploader}`,
         })
       },
