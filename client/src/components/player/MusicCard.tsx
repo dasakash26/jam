@@ -5,12 +5,13 @@ import { Button } from '../ui/button'
 import { Separator } from '../ui/separator'
 import { ImageWithFallback } from '../visual/ImageWithFallback'
 import { MusicCardSkeleton } from '../visual/Skeletons'
-import { formatDuration } from '#/utils/formatters'
+import { formatDuration, getInitials } from '#/utils/formatters'
 
 export { MusicCardSkeleton }
 
 interface MusicCardProps {
   currentSong?: Music
+  addedBy?: { userId: string; userName: string }
   isLoading?: boolean
   isError?: boolean
   error?: string
@@ -19,6 +20,7 @@ interface MusicCardProps {
 
 export function MusicCard({
   currentSong: s,
+  addedBy,
   isLoading,
   isError,
   error,
@@ -92,7 +94,20 @@ export function MusicCard({
         <h2 className="line-clamp-1 text-sm sm:text-base font-bold tracking-tight text-foreground">
           {s.title}
         </h2>
-        <p className="truncate text-xs font-medium text-muted-foreground">{s.uploader}</p>
+        <div className="flex items-center gap-2 truncate text-xs font-medium text-muted-foreground">
+          <span className="truncate">{s.uploader}</span>
+          {addedBy?.userName && (
+            <div
+              title={`Queued by ${addedBy.userName}`}
+              className="flex items-center gap-1.5 rounded-full bg-muted/80 border border-border/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0"
+            >
+              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[8px] uppercase">
+                {getInitials(addedBy.userName)}
+              </span>
+              <span className="max-w-[110px] truncate text-foreground/90 font-semibold">{addedBy.userName}</span>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   )

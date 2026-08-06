@@ -1,15 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { searchMusic } from '#/utils/api'
-import type { Music } from '#/types'
+import type { Music, QueueItem } from '#/types'
 import { toast } from 'sonner'
+import { safeUUID } from '#/utils/uuid'
 
 interface MusicPlayer {
   query: string
   results: Music[]
   isLoading: boolean
-  queue: Music[]
-  history: Music[]
+  queue: QueueItem[]
+  history: QueueItem[]
   error: string
   isError: boolean
   hasHydrated: boolean
@@ -21,7 +22,7 @@ interface MusicPlayer {
   popFromQueue: () => void
   playPrevious: () => void
   clearQueue: () => void
-  removeFromQueue: (index: number) => void
+  removeFromQueue: (queueItemId: string) => void
   clearHistory: () => void
 }
 
@@ -33,8 +34,8 @@ export const useMusicPlayer = create<MusicPlayer>()(
       query: '',
       results: [] as Music[],
       isLoading: false,
-      queue: [] as Music[],
-      history: [] as Music[],
+      queue: [] as QueueItem[],
+      history: [] as QueueItem[],
       error: '',
       isError: false,
       hasHydrated: false,
@@ -76,16 +77,18 @@ export const useMusicPlayer = create<MusicPlayer>()(
       },
 
       pushToQueue: (m: Music) => {
-        set((s) => ({ queue: [...s.queue, m] }))
+        const item: QueueItem = { queueItemId: safeUUID(), track: m }
+        set((s) => ({ queue: [...s.queue, item] }))
         toast('Added to Queue', {
           description: `${m.title} • ${m.uploader}`,
         })
       },
 
       playNextTrack: (m: Music) => {
+        const item: QueueItem = { queueItemId: safeUUID(), track: m }
         set((s) => {
-          if (s.queue.length === 0) return { queue: [m] }
-          const newQ = [s.queue[0], m, ...s.queue.slice(1)]
+          if (s.queue.length === 0) return { queue: [item] }
+          const newQ = [s.queue[0], item, ...s.queue.slice(1)]
           return { queue: newQ }
         })
         toast('Playing Next', {
@@ -97,16 +100,16 @@ export const useMusicPlayer = create<MusicPlayer>()(
         set((s) => {
           if (s.queue.length === 0) return s
           const [cur, ...rem] = s.queue
-          return { history: [...s.history, cur], queue: rem }
+          return { history: [cur, ...s.history], queue: rem }
         })
       },
 
       playPrevious: () => {
         set((s) => {
           if (s.history.length === 0) return s
-          const prev = s.history[s.history.length - 1]
+          const [prev, ...remHistory] = s.history
           return {
-            history: s.history.slice(0, -1),
+            history: remHistory,
             queue: [prev, ...s.queue],
           }
         })
@@ -119,12 +122,10 @@ export const useMusicPlayer = create<MusicPlayer>()(
         toast.info('Queue cleared')
       },
 
-      removeFromQueue: (index: number) => {
-        set((s) => {
-          const newQ = [...s.queue]
-          newQ.splice(index, 1)
-          return { queue: newQ }
-        })
+      removeFromQueue: (queueItemId: string) => {
+        set((s) => ({
+          queue: s.queue.filter((q) => q.queueItemId !== queueItemId),
+        }))
       },
 
       clearHistory: () => {
@@ -139,8 +140,14 @@ export const useMusicPlayer = create<MusicPlayer>()(
         history: s.history,
       }),
       onRehydrateStorage: () => (state) => {
+        const ensureQueueItem = (item: any): QueueItem =>
+          item?.track ? item : { queueItemId: safeUUID(), track: item }
+
+        if (state?.queue) state.queue = state.queue.map(ensureQueueItem)
+        if (state?.history) state.history = state.history.map(ensureQueueItem)
         state?.setHasHydrated(true)
       },
     },
   ),
 )
+

@@ -7,16 +7,16 @@ export interface Music {
 }
 
 export interface User {
-  id: string
-  name: string
+  userId: string
+  userName: string
 }
 
 export interface QueueItem {
   queueItemId: string
   track: Music
-  addedBy: {
-    id: string
-    name: string
+  addedBy?: {
+    userId: string
+    userName: string
   }
 }
 
@@ -26,7 +26,9 @@ export interface Room {
   hostId: string
   users: User[]
   queue: QueueItem[]
-  history: Music[]
+  history: QueueItem[]
   isPlaying: boolean
+  seekTime: number
+  updatedAt: number
 }
 

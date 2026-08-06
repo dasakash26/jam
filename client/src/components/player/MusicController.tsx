@@ -9,19 +9,31 @@ import type { Music } from '#/types'
 interface MusicControllerProps {
   currentSong?: Music
   hasHistory: boolean
+  targetSeekTime?: number
+  isPlaying?: boolean
   onNext?: () => void
   onPrevious?: () => void
+  onSeek?: (seekTime: number) => void
+  onPlayPause?: (isPlaying: boolean) => void
   onError?: () => void
 }
+
+const IGNORE_SEEK_DELTA = 1
 
 export function MusicController({
   currentSong: s,
   hasHistory,
+  targetSeekTime,
+  isPlaying,
   onNext,
   onPrevious,
+  onSeek,
+  onPlayPause,
   onError,
 }: MusicControllerProps) {
   const hasTrack = !!s
+  const playerRef = useRef<AudioPlayer>(null)
+  const isSeekingRef = useRef(false)
   const retryCountRef = useRef(0)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [streamSrc, setStreamSrc] = useState('')
@@ -33,6 +45,33 @@ export function MusicController({
       if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
     }
   }, [s?.id])
+
+  useEffect(() => {
+    const player = playerRef.current
+    if (!player || targetSeekTime == undefined) return
+
+    const audio = player.audio.current
+    if (
+      Math.abs(audio.currentTime - targetSeekTime) > IGNORE_SEEK_DELTA &&
+      !isSeekingRef.current
+    ) {
+      audio.currentTime = targetSeekTime
+    }
+  }, [targetSeekTime])
+
+  useEffect(() => {
+    console.log('[Music Controll] isPlaying', isPlaying)
+    const player = playerRef.current
+    if (!player) return
+    const audio = player.audio.current
+    if (audio.paused && isPlaying) {
+      console.log('[Music Controll] toggling playback')
+      audio.play()
+    } else if (!audio.paused && !isPlaying) {
+      console.log('[Music Controll] toggling playback')
+      audio.pause()
+    }
+  }, [isPlaying])
 
   const handleAudioError = () => {
     if (!s) return
@@ -65,6 +104,7 @@ export function MusicController({
       <div className="flex-1 w-full max-w-md">
         <div className={!hasTrack && !hasHistory ? 'hidden' : 'block'}>
           <AudioPlayer
+            ref={playerRef}
             className="[&_.rhap_volume-controls]:hidden sm:[&_.rhap_volume-controls]:flex [&_.rhap_main-controls]:w-full [&_.rhap_main-controls]:justify-center"
             src={streamSrc || undefined}
             autoPlay
@@ -73,6 +113,15 @@ export function MusicController({
             onClickNext={hasTrack ? onNext : undefined}
             onClickPrevious={hasHistory ? onPrevious : undefined}
             onEnded={hasTrack ? onNext : undefined}
+            onSeeking={() => {
+              isSeekingRef.current = true
+            }}
+            onSeeked={(e) => {
+              isSeekingRef.current = false
+              onSeek?.((e.target as HTMLAudioElement).currentTime)
+            }}
+            onPlay={() => onPlayPause?.(true)}
+            onPause={() => onPlayPause?.(false)}
             onError={handleAudioError}
           />
         </div>

@@ -26,6 +26,8 @@ export interface Room {
   name: string
   users: Map<string, User>
   queue: Set<QueueItem>
-  history: Music[]
+  history: QueueItem[]
   isPlaying: boolean
+  seekTime: number
+  updatedAt: number
 }

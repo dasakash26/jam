@@ -3,7 +3,7 @@ import { Moon, Sun, Monitor } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useTheme } from './theme-provider'
 
-export function ModeToggle() {
+export function ModeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
@@ -17,7 +17,7 @@ export function ModeToggle() {
   }
 
   return (
-    <Button variant="outline" size="icon" onClick={toggleTheme}>
+    <Button variant="outline" size="icon" onClick={toggleTheme} className={className}>
       {theme === 'system' && <Monitor className="h-[1.2rem] w-[1.2rem]" />}
       {theme === 'light' && <Sun className="h-[1.2rem] w-[1.2rem]" />}
       {theme === 'dark' && <Moon className="h-[1.2rem] w-[1.2rem]" />}

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { generateUsername } from '#/utils/names'
+import { safeUUID } from '#/utils/uuid'
 
 interface UserState {
   userId: string
@@ -11,7 +12,7 @@ interface UserState {
 export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
-      userId: crypto.randomUUID(),
+      userId: safeUUID(),
       userName: generateUsername(),
 
       setUserName: (name: string) => {

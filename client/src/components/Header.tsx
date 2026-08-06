@@ -2,35 +2,38 @@ import { Disc3 } from 'lucide-react'
 import { ModeToggle } from './visual/mode-toggle'
 import { SearchMusic } from './player/MusicSearch'
 import { JoinRoom } from './room/JoinRoom'
+import { RoomDetails } from './room/RoomDetails'
 import { UserProfileBadge } from './user/UserProfileBadge'
+import { HelpDialog } from './HelpDialog'
+import { useParams } from '@tanstack/react-router'
 
 interface HeaderProps {
   queueLength?: number
 }
 
-export function Header({ queueLength = 0 }: HeaderProps) {
+export function Header({ queueLength: _queueLength }: HeaderProps) {
+  const params = useParams({ strict: false })
+  const inRoom = Boolean(params.roomId)
+
   return (
-    <div className="flex items-center justify-between mx-auto w-full max-w-3xl shrink-0 gap-3 px-4 py-2.5 sm:px-5 sm:py-3 jam-card rounded-2xl sm:rounded-full">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground">
-          <Disc3 className="h-4 w-4" />
+    <div className="flex items-center justify-between mx-auto w-full max-w-5xl shrink-0 gap-2 sm:gap-3 px-3 py-2 sm:px-5 sm:py-3 jam-card rounded-2xl sm:rounded-full">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/15 text-primary shadow-xs">
+          <Disc3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin-slow" />
         </div>
-        <div className="flex items-center gap-2 min-w-0">
-          <h1 className="select-none text-base font-bold tracking-tight text-foreground">
-            JAM
-          </h1>
-          <span className="hidden sm:flex items-center justify-center rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {queueLength} in queue
-          </span>
-        </div>
+        <h1 className="select-none text-sm sm:text-base font-extrabold tracking-wider text-foreground">
+          JAM
+        </h1>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <SearchMusic />
-        <JoinRoom />
+        {inRoom ? <RoomDetails /> : <JoinRoom />}
+        <HelpDialog className="hidden sm:flex" />
         <UserProfileBadge />
-        <ModeToggle />
+        <ModeToggle className="hidden sm:flex" />
       </div>
     </div>
   )
 }
+

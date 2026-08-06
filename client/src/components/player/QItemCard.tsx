@@ -1,35 +1,35 @@
 import { X, MoreVertical, Plus, ListPlus } from 'lucide-react'
-import type { Music } from '#/types'
+import type { Music, QueueItem } from '#/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
-import { formatDuration } from '#/utils/formatters'
+import { formatDuration, getInitials } from '#/utils/formatters'
 import { ImageWithFallback } from '../visual/ImageWithFallback'
 import { EqualizerIcon } from '../visual/EqualizerIcon'
 
 interface QItemCardProps {
-  song: Music
+  item: QueueItem
   isCurrent?: boolean
   isHistory?: boolean
   canRemove?: boolean
-  queueIndex?: number
   onAddToQueue?: (song: Music) => void
   onPlayNext?: (song: Music) => void
-  onRemove?: (index: number) => void
+  onRemove?: (queueItemId: string) => void
 }
 
 export function QItemCard({
-  song,
+  item,
   isCurrent,
   canRemove,
-  queueIndex,
   onAddToQueue,
   onPlayNext,
   onRemove,
 }: QItemCardProps) {
+  const { track: song, queueItemId, addedBy } = item
+
   return (
     <div className="group flex items-center gap-2.5 rounded-lg p-1.5 sm:p-1 transition-colors hover:bg-muted/50">
       <div className="relative overflow-hidden rounded-md shrink-0 h-8.5 w-8.5 sm:h-8 sm:w-8">
@@ -49,9 +49,22 @@ export function QItemCard({
           </h4>
           {isCurrent && <EqualizerIcon className="h-3 w-3 text-primary shrink-0" />}
         </div>
-        <p className="text-[11px] sm:text-[10px] text-muted-foreground truncate">
-          {song.uploader}
-        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 truncate text-[11px] sm:text-[10px] text-muted-foreground">
+          <span className="truncate">{song.uploader}</span>
+          {addedBy?.userName && (
+            <div
+              title={`Queued by ${addedBy.userName}`}
+              className="inline-flex items-center gap-1 rounded-full bg-muted/90 border border-border/80 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground shrink-0"
+            >
+              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[8px] uppercase">
+                {getInitials(addedBy.userName)}
+              </span>
+              <span className="max-w-[70px] truncate text-foreground/90 font-medium">
+                {addedBy.userName}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0 pr-1">
@@ -59,9 +72,9 @@ export function QItemCard({
           {formatDuration(song.duration)}
         </span>
 
-        {canRemove && queueIndex !== undefined && onRemove && (
+        {canRemove && onRemove && (
           <button
-            onClick={() => onRemove(queueIndex)}
+            onClick={() => onRemove(queueItemId)}
             className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             title="Remove from queue"
           >
@@ -95,9 +108,9 @@ export function QItemCard({
                 Add to Queue
               </DropdownMenuItem>
             )}
-            {canRemove && queueIndex !== undefined && onRemove && (
+            {canRemove && onRemove && (
               <DropdownMenuItem
-                onClick={() => onRemove(queueIndex)}
+                onClick={() => onRemove(queueItemId)}
                 className="cursor-pointer text-xs text-destructive flex items-center gap-2 focus:text-destructive"
               >
                 <X className="h-3.5 w-3.5" />
@@ -110,3 +123,4 @@ export function QItemCard({
     </div>
   )
 }
+

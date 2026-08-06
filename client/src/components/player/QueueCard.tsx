@@ -1,16 +1,16 @@
 import { Card, CardHeader, CardTitle } from '../ui/card'
 import { ScrollArea } from '../ui/scroll-area'
 import { ListMusic, Trash2 } from 'lucide-react'
-import type { Music } from '#/types'
+import type { Music, QueueItem } from '#/types'
 import { QItemCard } from './QItemCard'
 
 interface QueueCardProps {
-  queue: Music[]
-  history: Music[]
+  queue: QueueItem[]
+  history: QueueItem[]
   onClearQueue?: () => void
   onClearHistory?: () => void
-  onRemoveFromQueue?: (index: number) => void
-  onAddToQueue?: (song: Music) => void
+  onRemoveFromQueue?: (queueItemId: string) => void
+  onAddToQueue: (song: Music) => void
   onPlayNext?: (song: Music) => void
 }
 
@@ -62,12 +62,11 @@ export function QueueCard({
                   <h3 className="px-1 text-xs sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     Upcoming ({upcoming.length})
                   </h3>
-                  {upcoming.map((song: Music, idx: number) => (
+                  {upcoming.map((item: QueueItem) => (
                     <QItemCard
-                      key={`${song.id}-${idx}`}
-                      song={song}
+                      key={item.queueItemId}
+                      item={item}
                       canRemove
-                      queueIndex={idx + 1}
                       onRemove={onRemoveFromQueue}
                       onAddToQueue={onAddToQueue}
                       onPlayNext={onPlayNext}
@@ -82,9 +81,8 @@ export function QueueCard({
                     <h3 className="text-xs font-semibold text-foreground">Now Playing</h3>
                   </div>
                   <QItemCard
-                    song={current}
+                    item={current}
                     isCurrent
-                    queueIndex={0}
                     onAddToQueue={onAddToQueue}
                     onPlayNext={onPlayNext}
                   />
@@ -106,10 +104,10 @@ export function QueueCard({
                       </button>
                     )}
                   </div>
-                  {hist.map((song: Music, idx: number) => (
+                  {hist.map((item: QueueItem, idx: number) => (
                     <QItemCard
-                      key={`hist-${song.id}-${idx}`}
-                      song={song}
+                      key={item.queueItemId || `hist-${idx}`}
+                      item={item}
                       isHistory
                       onAddToQueue={onAddToQueue}
                       onPlayNext={onPlayNext}
@@ -124,3 +122,4 @@ export function QueueCard({
     </Card>
   )
 }
+
