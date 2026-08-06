@@ -39,21 +39,25 @@ export function MusicController({
 
     if (retryCountRef.current < 3) {
       retryCountRef.current += 1
-      const delayMs = Math.pow(2, retryCountRef.current - 1) * 1000 
-      toast.warning(`Retrying playback for "${s.title}" (Attempt ${retryCountRef.current}/3)...`)
-      
+      const delayMs = Math.pow(2, retryCountRef.current - 1) * 1000
+      toast.warning(`Retrying playback for "${s.title}"`, {
+        description: `Attempt ${retryCountRef.current} of 3 failed. Retrying in ${delayMs / 1000}s...`,
+      })
+
       if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
       retryTimeoutRef.current = setTimeout(() => {
         setStreamSrc(`${getStreamUrl(s.id)}?retry=${Date.now()}`)
       }, delayMs)
     } else {
-      toast.error(`Unable to stream "${s.title}" after retries.`)
+      toast.error('Audio Stream Failed', {
+        description: `Unable to stream "${s.title}". The YouTube audio stream link expired or upstream server returned an error. Skipping track...`,
+      })
       onError?.()
     }
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 jam-card px-4 py-3 sm:px-5 sm:py-2.5">
+    <div className="mx-auto flex w-full max-w-4xl flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 jam-card rounded-2xl sm:rounded-full px-4 py-3 sm:px-6 sm:py-2">
       <div className="w-full sm:w-64 shrink-0 flex justify-center sm:justify-start">
         <TrackInfo s={hasTrack ? s : undefined} />
       </div>
@@ -62,7 +66,7 @@ export function MusicController({
         <div className={!hasTrack && !hasHistory ? 'hidden' : 'block'}>
           <AudioPlayer
             className="[&_.rhap_volume-controls]:hidden sm:[&_.rhap_volume-controls]:flex [&_.rhap_main-controls]:w-full [&_.rhap_main-controls]:justify-center"
-            src={streamSrc}
+            src={streamSrc || undefined}
             autoPlay
             showSkipControls
             showJumpControls={false}
@@ -81,4 +85,3 @@ export function MusicController({
     </div>
   )
 }
-

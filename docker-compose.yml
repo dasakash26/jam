@@ -23,6 +23,5 @@ services:
       - "3000:3000"
     volumes:
       - ./client/src:/app/src
-    environment:
-      - PORT=3000
-      - VITE_SERVER_URL=http://server:8787
+    env_file:
+      - ./client/.env

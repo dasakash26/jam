@@ -1,11 +1,11 @@
 export const CONFIG = {
   USER_AGENT:
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-  YOUTUBE_URL: "https://www.youtube.com/",
-  AUDIO_FORMAT: "ba/b",
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  YOUTUBE_URL: 'https://www.youtube.com/',
+  AUDIO_FORMAT: 'ba/b',
   MAX_CACHE_SIZE: 10000,
   CACHE_TTL_MS: 3600 * 1000,
-  COOKIE_FILE: "cookie.text",
+  COOKIE_FILE: 'cookie.text',
   YOUTUBE_ID_REGEX: /^[a-zA-Z0-9_-]{11}$/,
 } as const;
 
@@ -17,13 +17,13 @@ Bun.file(CONFIG.COOKIE_FILE)
   });
 
 async function runYtDlp(args: string[]): Promise<string> {
-  const flags = ["--user-agent", CONFIG.USER_AGENT, ...args];
+  const flags = ['--user-agent', CONFIG.USER_AGENT, ...args];
 
   if (hasCookieFile) {
-    flags.unshift("--cookies", CONFIG.COOKIE_FILE);
+    flags.unshift('--cookies', CONFIG.COOKIE_FILE);
   }
 
-  const proc = Bun.spawn(["yt-dlp", ...flags]);
+  const proc = Bun.spawn(['yt-dlp', ...flags]);
 
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
@@ -37,7 +37,7 @@ async function runYtDlp(args: string[]): Promise<string> {
   }
 
   const result = stdout.trim();
-  if (!result) throw new Error("yt-dlp returned an empty response from YouTube.");
+  if (!result) throw new Error('yt-dlp returned an empty response from YouTube.');
 
   return result;
 }
@@ -56,11 +56,7 @@ export async function search(query: string): Promise<YtDlpEntry[]> {
   const hasAudioKeyword = /\b(song|music|audio|track|remix|lyrics|official|video)\b/i.test(query);
   const searchQuery = hasAudioKeyword ? query : `${query} song`;
 
-  const stdout = await runYtDlp([
-    "--flat-playlist",
-    "-J",
-    `ytsearch10:${searchQuery}`,
-  ]);
+  const stdout = await runYtDlp(['--flat-playlist', '-J', `ytsearch10:${searchQuery}`]);
   try {
     const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
     return parsed.entries || [];
@@ -83,8 +79,8 @@ export async function getStreamUrl(songId: string): Promise<string> {
   }
 
   const url = await runYtDlp([
-    "-g",
-    "-f",
+    '-g',
+    '-f',
     CONFIG.AUDIO_FORMAT,
     `${CONFIG.YOUTUBE_URL}watch?v=${songId}`,
   ]);
@@ -98,7 +94,7 @@ export async function getStreamUrl(songId: string): Promise<string> {
   }
 
   urlCache.set(songId, { url, expiresAt: Date.now() + CONFIG.CACHE_TTL_MS });
-  console.log("[stream] found and cached stream url", url);
+  console.log('[stream] found and cached stream url', url);
 
   return url;
 }

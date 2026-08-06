@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/oxanium';
 
 @custom-variant dark (&:is(.dark, .dark *));
 
@@ -26,39 +27,48 @@
   --radius: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --font-display: 'Oxanium Variable', system-ui, sans-serif;
   --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 :root {
-  /* Rich Amber-Sand Studio Light Mode */
-  --background: #dfd4c3;
-  --foreground: #1c1917;
-  --card: #ebdcc8;
-  --card-foreground: #1c1917;
-  --popover: #ebdcc8;
-  --popover-foreground: #1c1917;
-  --primary: #c2410c;
+  /* Slate-Grey & Warm Amber Light Studio Theme */
+  --background: #d9e0e8;
+  --foreground: #0f172a;
+  --card: #c9d3df;
+  --card-foreground: #0f172a;
+  --popover: #c9d3df;
+  --popover-foreground: #0f172a;
+  --primary: #d97706;
   --primary-foreground: #ffffff;
-  --secondary: #d8c8b2;
-  --secondary-foreground: #1c1917;
-  --muted: #d8c8b2;
-  --muted-foreground: #292524;
-  --accent: #d8c8b2;
-  --accent-foreground: #1c1917;
+  --secondary: #b4c1d0;
+  --secondary-foreground: #0f172a;
+  --muted: #b4c1d0;
+  --muted-foreground: #475569;
+  --accent: #b4c1d0;
+  --accent-foreground: #0f172a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #c3b299;
-  --input: #c3b299;
-  --ring: #c2410c;
-  --radius: 0.5rem;
-  --bg-gradient: radial-gradient(circle at 50% 0%, rgba(234, 88, 12, 0.28) 0%, rgba(217, 119, 6, 0.14) 50%, transparent 80%), #dfd4c3;
-  --card-bg: rgba(235, 220, 200, 0.95);
-  --card-border: rgba(195, 178, 153, 0.85);
-  --card-shadow: 0 12px 36px -10px rgba(28, 25, 23, 0.14);
+  --border: #8e9fae;
+  --input: #8e9fae;
+  --ring: #d97706;
+  --radius: 0.75rem;
+
+  --bg-gradient:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(217, 119, 6, 0.12) 0%,
+      rgba(142, 159, 174, 0.12) 50%,
+      transparent 80%
+    ),
+    #d9e0e8;
+  --card-bg: rgba(201, 211, 223, 0.94);
+  --card-border: rgba(142, 159, 174, 0.6);
+  --card-shadow: 0 12px 32px -10px rgba(15, 23, 42, 0.12);
 }
 
 .dark {
-  /* Rich Deep Slate-Navy Dark Mode */
+  /* Slate-Navy & Warm Amber Midnight Studio Theme */
   --background: #0d1322;
   --foreground: #e2e8f0;
   --card: #182032;
@@ -78,10 +88,18 @@
   --border: #334360;
   --input: #334360;
   --ring: #f59e0b;
-  --bg-gradient: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.06) 45%, transparent 70%), #0d1322;
+
+  --bg-gradient:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(245, 158, 11, 0.12) 0%,
+      rgba(217, 119, 6, 0.04) 45%,
+      transparent 70%
+    ),
+    #0d1322;
   --card-bg: rgba(24, 32, 50, 0.92);
   --card-border: rgba(51, 67, 96, 0.7);
-  --card-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.5);
+  --card-shadow: 0 14px 36px -10px rgba(0, 0, 0, 0.5);
 }
 
 html,
@@ -92,11 +110,20 @@ html,
 body {
   background: var(--bg-gradient);
   color: var(--foreground);
+  font-family: var(--font-display);
   min-height: 100dvh;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
+@media (min-width: 768px) {
+  body {
+    overflow: hidden;
+  }
+}
+
+/* React H5 Audio Player custom theme overrides */
 .rhap_container {
   background-color: transparent !important;
   box-shadow: none !important;
@@ -113,29 +140,38 @@ body {
 }
 .rhap_progress-bar {
   background-color: var(--border) !important;
+  border-radius: 9999px !important;
 }
 .rhap_progress-filled {
   background-color: var(--primary) !important;
+  border-radius: 9999px !important;
 }
 .rhap_progress-indicator {
   background-color: var(--primary) !important;
+  box-shadow: none !important;
 }
 .rhap_button-clear {
   color: var(--foreground) !important;
+  transition: color 0.2s ease !important;
+}
+.rhap_button-clear:hover {
+  color: var(--primary) !important;
 }
 .rhap_time {
   color: var(--muted-foreground) !important;
   font-family: monospace !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
 }
 .rhap_volume-button {
   color: var(--muted-foreground) !important;
 }
 .rhap_volume-bar {
   background-color: var(--border) !important;
+  border-radius: 9999px !important;
 }
 .rhap_volume-filled {
   background-color: var(--primary) !important;
+  border-radius: 9999px !important;
 }
 .rhap_volume-indicator {
   background-color: var(--primary) !important;
@@ -146,9 +182,9 @@ body {
     background-color: var(--card-bg);
     border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(16px);
     border-radius: 1.25rem;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.2s ease;
   }
 
   .jam-card-hover:hover {

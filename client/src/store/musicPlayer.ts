@@ -51,21 +51,26 @@ export const useMusicPlayer = create<MusicPlayer>()(
         const q = get().query
 
         if (!q) {
-          set({ results: [], isLoading: false, isError: false })
+          set({ results: [], isLoading: false, isError: false, error: '' })
           return
         }
 
-        set({ isLoading: true })
+        set({ isLoading: true, isError: false, error: '' })
         searchTimeoutId = setTimeout(async () => {
           try {
             const res = await searchMusic(q)
-            if (get().query != q) return
-            set({ results: res, isLoading: false, isError: false })
+            if (get().query !== q) return
+            set({ results: res, isLoading: false, isError: false, error: '' })
             toast.success(`Results for "${q}"`, {
               description: `${res.length} ${res.length === 1 ? 'track' : 'tracks'} ready to play`,
             })
-          } catch (e) {
-            set({ error: String(e), isLoading: false, isError: true })
+          } catch (e: unknown) {
+            if (get().query !== q) return
+            const errorMsg = e instanceof Error ? e.message : String(e)
+            set({ error: errorMsg, isLoading: false, isError: true })
+            toast.error('Search Failed', {
+              description: errorMsg,
+            })
           }
         }, 400)
       },

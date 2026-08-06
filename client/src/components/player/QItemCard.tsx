@@ -5,9 +5,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from '../ui/dropdown-menu'
 import { formatDuration } from '#/utils/formatters'
-import { ImageWithFallback } from './ImageWithFallback'
+import { ImageWithFallback } from '../visual/ImageWithFallback'
+import { EqualizerIcon } from '../visual/EqualizerIcon'
 
 interface QItemCardProps {
   song: Music
@@ -30,8 +31,8 @@ export function QItemCard({
   onRemove,
 }: QItemCardProps) {
   return (
-    <div className="group flex items-center gap-3 rounded-lg p-2 sm:p-1.5 transition-colors hover:bg-muted/50">
-      <div className="relative overflow-hidden rounded-md shrink-0 h-10 w-10 sm:h-9 sm:w-9">
+    <div className="group flex items-center gap-2.5 rounded-lg p-1.5 sm:p-1 transition-colors hover:bg-muted/50">
+      <div className="relative overflow-hidden rounded-md shrink-0 h-8.5 w-8.5 sm:h-8 sm:w-8">
         <ImageWithFallback
           src={song.thumbnailUrl}
           alt={song.title}
@@ -40,12 +41,15 @@ export function QItemCard({
       </div>
 
       <div className="min-w-0 flex-1 text-left">
-        <h4
-          className={`truncate text-sm sm:text-xs font-medium ${isCurrent ? 'text-primary font-semibold' : 'text-foreground'}`}
-        >
-          {song.title}
-        </h4>
-        <p className="text-xs sm:text-[10px] text-muted-foreground truncate mt-0.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h4
+            className={`truncate text-xs font-medium ${isCurrent ? 'text-primary font-semibold' : 'text-foreground'}`}
+          >
+            {song.title}
+          </h4>
+          {isCurrent && <EqualizerIcon className="h-3 w-3 text-primary shrink-0" />}
+        </div>
+        <p className="text-[11px] sm:text-[10px] text-muted-foreground truncate">
           {song.uploader}
         </p>
       </div>
@@ -106,4 +110,3 @@ export function QItemCard({
     </div>
   )
 }
-

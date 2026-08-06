@@ -1,112 +1,135 @@
-import { NotFoundError } from "../utils/errors";
+import type { Music, QueueItem, Room } from '../../types'
+import { NotFoundError } from '../utils/errors'
 
-export interface User {
-  id: string;
-  name: string;
-  timeOutId?: ReturnType<typeof setTimeout>;
-}
-
-export interface Music {
-  id: string;
-  title: string;
-  uploader: string;
-  duration: number;
-  thumbnailUrl: string;
-}
-
-export interface Room {
-  id: string;
-  name: string;
-  users: Map<string, User>;
-  queue: Music[];
-  history: Music[];
-  isPlaying: boolean;
-}
-
-const PING_INTERVAL = 5 * 1000;
-const rooms = new Map<string, Room>();
+const PING_INTERVAL = 10 * 1000
+const rooms = new Map<string, Room>()
 
 export function createRoom(roomName: string, userId: string, userName: string) {
-  const roomId = crypto.randomUUID();
+  const roomId = crypto.randomUUID()
 
   // setup room
   rooms.set(roomId, {
     id: roomId,
     name: roomName,
     users: new Map(),
-    queue: [],
+    queue: new Set<QueueItem>(),
     history: [],
     isPlaying: false,
-  });
+  })
 
-  joinRoom(roomId, userId, userName);
-  return roomId;
+  joinRoom(roomId, userId, userName)
+  return roomId
 }
 
 export function joinRoom(roomId: string, userId: string, userName: string): Room {
-  const room = rooms.get(roomId);
+  const room = rooms.get(roomId)
 
   if (!room) {
-    throw new NotFoundError(`Unable to join room "${roomId}". Room does not exist.`);
+    throw new NotFoundError(`Unable to join room "${roomId}". Room does not exist.`)
   }
 
-  const existingUser = room.users.get(userId);
+  const existingUser = room.users.get(userId)
   if (existingUser?.timeOutId) {
-    clearTimeout(existingUser.timeOutId);
+    clearTimeout(existingUser.timeOutId)
   }
 
   room.users.set(userId, {
-    id: userId,
-    name: userName,
+    userId,
+    userName,
     timeOutId: setTimeout(() => {
       try {
-        leaveRoom(roomId, userId);
+        leaveRoom(roomId, userId)
       } catch {}
     }, PING_INTERVAL),
-  });
+  })
 
-  return room;
+  return room
 }
 
 export function leaveRoom(roomId: string, userId: string): void {
-  const room = rooms.get(roomId);
-  const user = room?.users.get(userId);
+  const room = rooms.get(roomId)
+  if (!room) return
 
-  if (!room || !user) {
-    throw new NotFoundError(`Unable to leave room "${roomId}". Room or user session not found.`);
+  const user = room.users.get(userId)
+  if (user?.timeOutId) {
+    clearTimeout(user.timeOutId)
   }
 
-  if (user.timeOutId) {
-    clearTimeout(user.timeOutId);
-  }
-
-  room.users.delete(userId);
+  room.users.delete(userId)
 }
 
 export function getRoom(roomId: string, userId: string): Room {
-  const room = rooms.get(roomId);
-  const user = room?.users.get(userId);
+  const room = rooms.get(roomId)
+  if (!room) {
+    throw new NotFoundError(`Room "${roomId}" was not found`)
+  }
 
-  if (!room || !user) {
-    throw new NotFoundError(`Room "${roomId}" was not found or session expired.`);
+  const user = room.users.get(userId)
+  if (!user) {
+    throw new NotFoundError(`session expired.`)
   }
 
   if (user.timeOutId) {
-    clearTimeout(user.timeOutId);
+    clearTimeout(user.timeOutId)
   }
 
   user.timeOutId = setTimeout(() => {
     try {
-      leaveRoom(roomId, userId);
+      leaveRoom(roomId, userId)
     } catch {}
-  }, PING_INTERVAL);
+  }, PING_INTERVAL)
 
-  return room;
+  return room
 }
 
 export function serializeRoom(room: Room) {
   return {
     ...room,
     users: Array.from(room.users.values()),
-  };
+    queue: Array.from(room.queue),
+  }
+}
+
+export function addToQueue(roomId: string, userId: string, track: Music) {
+  const room = rooms.get(roomId)
+  if (!room) {
+    throw new NotFoundError(`Room "${roomId}" was not found`)
+  }
+
+  const user = room.users.get(userId)
+  if (!user) {
+    throw new NotFoundError(`session expired.`)
+  }
+
+  room.queue.add({
+    queueItemId: crypto.randomUUID(),
+    track,
+    addedBy: {
+      userId,
+      userName: user.userName,
+    },
+  })
+
+  return room
+}
+
+export function removeFromQueue(roomId: string, userId: string, queueItemId: string) {
+  const room = rooms.get(roomId)
+  if (!room) {
+    throw new NotFoundError(`Room "${roomId}" was not found`)
+  }
+
+  const user = room.users.get(userId)
+  if (!user) {
+    throw new NotFoundError(`session expired.`)
+  }
+
+  for (const item of room.queue) {
+    if (item.queueItemId === queueItemId) {
+      room.queue.delete(item)
+      break
+    }
+  }
+
+  return room
 }

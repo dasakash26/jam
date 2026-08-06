@@ -1,10 +1,10 @@
-import { Card, CardTitle, CardDescription } from './ui/card'
+import { Card, CardTitle, CardDescription } from '../ui/card'
 import { Music2, AlertCircle, RefreshCw } from 'lucide-react'
 import type { Music } from '#/types'
-import { Button } from './ui/button'
-import { Separator } from './ui/separator'
-import { ImageWithFallback } from './ImageWithFallback'
-import { MusicCardSkeleton } from './Skeletons'
+import { Button } from '../ui/button'
+import { Separator } from '../ui/separator'
+import { ImageWithFallback } from '../visual/ImageWithFallback'
+import { MusicCardSkeleton } from '../visual/Skeletons'
 import { formatDuration } from '#/utils/formatters'
 
 export { MusicCardSkeleton }
@@ -76,24 +76,23 @@ export function MusicCard({
   }
 
   return (
-    <Card className="flex flex-1 h-full min-h-0 w-full max-w-lg flex-col overflow-hidden jam-card jam-card-hover p-0 border border-border/60 bg-card">
-      <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+    <Card className="flex flex-col flex-1 h-full min-h-[420px] sm:min-h-0 w-full max-w-lg overflow-hidden jam-card jam-card-hover p-4 sm:p-5 gap-3.5">
+      <div className="relative w-full flex-1 min-h-[220px] sm:min-h-0 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg shadow-black/15 group bg-muted/40">
         <ImageWithFallback
           src={s.thumbnailUrl}
           alt={s.title}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
+        <span className="absolute bottom-2.5 right-2.5 select-none rounded-full bg-black/60 px-2.5 py-0.5 text-[10px] font-mono font-medium text-white backdrop-blur-md border border-white/10 shadow-xs">
+          {formatDuration(s.duration)}
+        </span>
       </div>
 
-      <div className="flex flex-col justify-center gap-1 p-4 sm:p-5 border-t border-border/40 bg-card/95">
-        <h2 className="line-clamp-1 text-base sm:text-lg font-bold tracking-tight text-foreground">
+      <div className="flex flex-col justify-center gap-0.5 px-1 py-0.5 shrink-0">
+        <h2 className="line-clamp-1 text-sm sm:text-base font-bold tracking-tight text-foreground">
           {s.title}
         </h2>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-          <span className="truncate max-w-[260px] font-medium">{s.uploader}</span>
-          <span className="select-none text-[8px] text-muted-foreground/60">•</span>
-          <span className="font-mono text-xs font-normal text-muted-foreground">{formatDuration(s.duration)}</span>
-        </div>
+        <p className="truncate text-xs font-medium text-muted-foreground">{s.uploader}</p>
       </div>
     </Card>
   )
@@ -106,11 +105,7 @@ export function EmptyMusicCard() {
       <CardTitle className="mb-1 text-sm font-medium text-foreground">
         No Song Playing
       </CardTitle>
-      <CardDescription className="text-xs">
-        Search and add tracks to play
-      </CardDescription>
+      <CardDescription className="text-xs">Search and add tracks to play</CardDescription>
     </Card>
   )
 }
-
-

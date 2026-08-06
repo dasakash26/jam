@@ -1,3 +1,9 @@
+export interface User {
+  userId: string
+  userName: string
+  timeOutId?: ReturnType<typeof setTimeout>
+}
+
 export interface Music {
   id: string
   title: string
@@ -6,27 +12,20 @@ export interface Music {
   thumbnailUrl: string
 }
 
-export interface User {
-  id: string
-  name: string
-}
-
 export interface QueueItem {
   queueItemId: string
   track: Music
   addedBy: {
-    id: string
-    name: string
+    userId: string
+    userName: string
   }
 }
 
 export interface Room {
   id: string
   name: string
-  hostId: string
-  users: User[]
-  queue: QueueItem[]
+  users: Map<string, User>
+  queue: Set<QueueItem>
   history: Music[]
   isPlaying: boolean
 }
-
