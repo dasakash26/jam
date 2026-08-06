@@ -32,16 +32,27 @@ async function runYtDlp(args: string[]): Promise<string> {
   ]);
 
   if (exitCode !== 0) {
-    throw new Error(stderr || `yt-dlp failed with exit code ${exitCode}`);
+    const errText = stderr.trim();
+    throw new Error(errText || `yt-dlp command execution failed with exit code ${exitCode}`);
   }
 
   const result = stdout.trim();
-  if (!result) throw new Error("yt-dlp returned an empty response.");
+  if (!result) throw new Error("yt-dlp returned an empty response from YouTube.");
 
   return result;
 }
 
-export async function search(query: string) {
+export interface YtDlpEntry {
+  id: string;
+  title: string;
+  uploader?: string;
+  channel?: string;
+  duration?: number;
+  thumbnails?: Array<{ url: string }>;
+  [key: string]: unknown;
+}
+
+export async function search(query: string): Promise<YtDlpEntry[]> {
   const hasAudioKeyword = /\b(song|music|audio|track|remix|lyrics|official|video)\b/i.test(query);
   const searchQuery = hasAudioKeyword ? query : `${query} song`;
 
@@ -51,9 +62,11 @@ export async function search(query: string) {
     `ytsearch10:${searchQuery}`,
   ]);
   try {
-    return JSON.parse(stdout).entries || [];
-  } catch {
-    throw new Error("Failed to parse yt-dlp search output.");
+    const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
+    return parsed.entries || [];
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to parse yt-dlp search JSON output: ${message}`);
   }
 }
 

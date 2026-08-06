@@ -1,23 +1,30 @@
 import { Hono } from "hono";
 import { CONFIG, getStreamUrl, invalidateCache, search } from "../services/youtube";
+import { AppError, BadRequestError, UpstreamError, type StatusCode } from "../utils/errors";
 
 const router = new Hono()
   .get("/search", async (c) => {
     const query = c.req.query("q")?.trim();
-    if (!query) return c.json({ error: "Missing query parameter 'q'" }, 400);
+    if (!query) {
+      throw new BadRequestError("Missing required query parameter 'q'.");
+    }
 
     try {
       const res = await search(query);
       return c.json(res);
-    } catch (e: any) {
+    } catch (e: unknown) {
+      if (e instanceof AppError) throw e;
       console.error("Search Error:", e);
-      return c.json({ error: String(e.message) }, 500);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new AppError(message || `Search failed for query "${query}".`, 500);
     }
   })
   .get("/stream/:songId", async (c) => {
     const songId = c.req.param("songId");
     if (!songId || !CONFIG.YOUTUBE_ID_REGEX.test(songId)) {
-      return c.json({ error: "Invalid or missing songId format" }, 400);
+      throw new BadRequestError(
+        `Invalid song ID format: "${songId}". Expected 11 character YouTube video ID.`
+      );
     }
 
     try {
@@ -51,9 +58,9 @@ const router = new Hono()
 
       if (!res.ok) {
         res.body?.cancel();
-        return c.json(
-          { error: `Upstream error: ${res.statusText}` },
-          res.status as any
+        throw new UpstreamError(
+          `Upstream streaming server returned status ${res.status}: ${res.statusText || 'Forbidden/Not Found'}`,
+          res.status as StatusCode
         );
       }
 
@@ -74,12 +81,17 @@ const router = new Hono()
         status: res.status,
         headers: resHeaders,
       });
-    } catch (e: any) {
-      if (e.name === "AbortError") {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") {
         return new Response(null, { status: 499 });
       }
+      if (e instanceof AppError) throw e;
       console.error("Stream Error:", e);
-      return c.json({ error: String(e.message) }, 500);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new AppError(
+        message || `Failed to extract stream for song ID "${songId}".`,
+        500
+      );
     }
   });
 
