@@ -3,16 +3,16 @@ import { ApiError } from './errors'
 import { generateId } from './uuid'
 
 export function getApiUrl() {
+  const envUrl = import.meta.env.VITE_API_URL
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim()
+  }
   if (typeof window !== 'undefined') {
-    const envUrl = import.meta.env.VITE_API_URL
-    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-      return envUrl
-    }
     const hostname = window.location.hostname
     const port = window.location.port ? `:${window.location.port}` : ''
     return `${window.location.protocol}//${hostname}${port}`
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  return 'http://localhost:3000'
 }
 
 async function parseApiError(res: Response, fallbackMessage: string): Promise<ApiError> {
