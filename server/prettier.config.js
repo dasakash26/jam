@@ -9,8 +9,8 @@ const config = {
   printWidth: 100,
   tabWidth: 2,
   useTabs: false,
-  bracketSpacing: true,
-  bracketSameLine: false,
+  bracketSpacing: false,
+  bracketSameLine: true,
   arrowParens: 'always',
   endOfLine: 'lf',
 }

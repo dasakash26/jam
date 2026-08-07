@@ -4,27 +4,17 @@ services:
   server:
     build:
       context: ./server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: jam-server
     ports:
       - "8787:8787"
-    volumes:
-      - ./server/src:/app/src
-      - ./server/cookie.text:/app/cookie.text
-    environment:
-      - PORT=8787
+    env_file:
+      - ./server/.env
 
   client:
     build:
       context: ./client
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: jam-client
     ports:
       - "3000:3000"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    env_file:
-      - ./client/.env
-    environment:
-      - VITE_SERVER_API_URL=http://server:8787

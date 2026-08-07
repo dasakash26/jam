@@ -166,7 +166,6 @@ function RoomPage() {
   useEffect(() => {
     return () => {
       console.debug(`[ROOM]: ${userName} leaving ${roomId.slice(0, 5)}`)
-      // leaveRoomApi(roomId, userId).catch(() => {})
     }
   }, [roomId, userId, userName])
 
@@ -181,7 +180,7 @@ function RoomPage() {
     <div className="relative min-h-dvh w-full overflow-y-auto md:h-dvh md:max-h-dvh md:overflow-hidden">
       <LightRays mouseInfluence={0.5} />
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col justify-start md:justify-between gap-3 sm:gap-5 p-3 sm:p-4 md:p-6 pb-32 sm:pb-36 md:h-full md:max-h-full md:pb-28">
-        <Header queueLength={room.queue.length} />
+        <Header />
         <div className="my-auto flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-4 sm:gap-6 md:flex-row md:items-stretch max-w-5xl mx-auto md:h-[calc(100dvh-170px)] md:max-h-155 lg:max-h-165">
           <MusicCard currentSong={currentSong} addedBy={currentItem?.addedBy} />
           <QueueCard

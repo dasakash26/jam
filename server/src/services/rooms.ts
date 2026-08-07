@@ -1,42 +1,54 @@
-import type { Music, QueueItem, Room } from '../../types'
-import { NotFoundError } from '../utils/errors'
+import type {Music, QueueItem, Room} from '../../types'
+import {NotFoundError} from '../utils/errors'
+import {
+  ID_CHARSET,
+  QUEUE_ITEM_ID_LENGTH,
+  QUEUE_ITEM_ID_PREFIX,
+  ROOM_HISTORY_MAX_LENGTH,
+  ROOM_ID_LENGTH,
+  ROOM_ID_PREFIX,
+  ROOM_SWEEP_INTERVAL_MS,
+  ROOM_USER_STALE_THRESHOLD_MS,
+} from '../utils/config'
 
-const SWEEP_INTERVAL = 15 * 1000
-const STALE_THRESHOLD = 45 * 1000
 const rooms = new Map<string, Room>()
 
-let cleanUpInterval
-
-if (!cleanUpInterval) {
-  cleanUpInterval = setInterval(() => {
-    rooms.forEach((room) => {
-      room.users.forEach((user) => {
-        const delta = Date.now() - user.pingedAt
-        if (delta > STALE_THRESHOLD) room.users.delete(user.userId)
-      })
-      if (room.users.size === 0) {
-        rooms.delete(room.id)
+setInterval(() => {
+  for (const [roomId, room] of rooms) {
+    for (const [uid, user] of room.users) {
+      if (Date.now() - user.pingedAt > ROOM_USER_STALE_THRESHOLD_MS) {
+        room.users.delete(uid)
       }
-    })
-  }, SWEEP_INTERVAL)
-}
+    }
+    if (room.users.size === 0) rooms.delete(roomId)
+  }
+}, ROOM_SWEEP_INTERVAL_MS)
 
-function generateId(prefix = '', length = 6): string {
-  const chars = '23456789abcdefghjkmnpqrstuvwxyz'
-  let id = ''
+function generateId(prefix: string, length: number): string {
+  let id: string
   do {
     id = prefix
     for (let i = 0; i < length; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length))
+      id += ID_CHARSET.charAt(Math.floor(Math.random() * ID_CHARSET.length))
     }
   } while (rooms.has(id))
   return id
 }
 
-export function createRoom(roomName: string, userId: string, userName: string) {
-  const roomId = generateId('room_', 6)
+function requireRoom(roomId: string): Room {
+  const room = rooms.get(roomId)
+  if (!room) throw new NotFoundError(`Room "${roomId}" not found.`)
+  return room
+}
 
-  // setup room
+function requireUser(room: Room, userId: string) {
+  const user = room.users.get(userId)
+  if (!user) throw new NotFoundError('Session expired. Re-join the room.')
+  return user
+}
+
+export function createRoom(roomName: string, userId: string, userName: string): string {
+  const roomId = generateId(ROOM_ID_PREFIX, ROOM_ID_LENGTH)
   rooms.set(roomId, {
     id: roomId,
     name: roomName,
@@ -47,48 +59,26 @@ export function createRoom(roomName: string, userId: string, userName: string) {
     seekTime: 0,
     updatedAt: Date.now(),
   })
-
   joinRoom(roomId, userId, userName)
   return roomId
 }
 
 export function joinRoom(roomId: string, userId: string, userName: string): Room {
-  const room = rooms.get(roomId)
-
-  if (!room) {
-    throw new NotFoundError(`Unable to join room "${roomId}". Room does not exist.`)
-  }
-
-  room.users.set(userId, {
-    userId,
-    userName,
-    pingedAt: Date.now(),
-  })
-
+  const room = requireRoom(roomId)
+  room.users.set(userId, {userId, userName, pingedAt: Date.now()})
   return room
 }
 
 export function leaveRoom(roomId: string, userId: string): void {
   const room = rooms.get(roomId)
   if (!room) return
-
   room.users.delete(userId)
-  if (room.users.size === 0) {
-    rooms.delete(roomId)
-  }
+  if (room.users.size === 0) rooms.delete(roomId)
 }
 
 export function getRoom(roomId: string, userId: string): Room {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
-
+  const room = requireRoom(roomId)
+  const user = requireUser(room, userId)
   user.pingedAt = Date.now()
   return room
 }
@@ -101,43 +91,23 @@ export function serializeRoom(room: Room) {
   }
 }
 
-export function addToQueue(roomId: string, userId: string, tracks: Music[]) {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
+export function addToQueue(roomId: string, userId: string, tracks: Music[]): Room {
+  const room = requireRoom(roomId)
+  const user = requireUser(room, userId)
 
   for (const track of tracks) {
     room.queue.add({
-      queueItemId: generateId('item_', 6),
+      queueItemId: generateId(QUEUE_ITEM_ID_PREFIX, QUEUE_ITEM_ID_LENGTH),
       track,
-      addedBy: {
-        userId,
-        userName: user.userName,
-      },
+      addedBy: {userId, userName: user.userName},
     })
   }
-
   return room
 }
 
-
-
-export function removeFromQueue(roomId: string, userId: string, queueItemId: string) {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
+export function removeFromQueue(roomId: string, userId: string, queueItemId: string): Room {
+  const room = requireRoom(roomId)
+  requireUser(room, userId)
 
   for (const item of room.queue) {
     if (item.queueItemId === queueItemId) {
@@ -145,90 +115,53 @@ export function removeFromQueue(roomId: string, userId: string, queueItemId: str
       break
     }
   }
-
-  room.isPlaying = room.queue.size > 0
+  if (room.queue.size === 0) {
+    room.isPlaying = false
+  }
   return room
 }
 
 export function updatePlayback(
   roomId: string,
   userId: string,
-  payload: { isPlaying: boolean; seekTime: number },
-) {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
-
+  payload: {isPlaying: boolean; seekTime: number},
+): Room {
+  const room = requireRoom(roomId)
+  requireUser(room, userId)
   room.seekTime = Math.max(0, payload.seekTime)
   room.isPlaying = payload.isPlaying
   room.updatedAt = Date.now()
   return room
 }
 
-export function togglePlayback(roomId: string, userId: string, isPlaying?: boolean) {
-  const room = rooms.get(roomId)
-  const nextIsPlaying = typeof isPlaying === 'boolean' ? isPlaying : !(room?.isPlaying ?? false)
-  return updatePlayback(roomId, userId, { isPlaying: nextIsPlaying, seekTime: room?.seekTime ?? 0 })
-}
+export function nextTrack(roomId: string, userId: string): Room {
+  const room = requireRoom(roomId)
+  requireUser(room, userId)
 
-export function seekPlayback(roomId: string, userId: string, seekTime: number) {
-  const room = rooms.get(roomId)
-  return updatePlayback(roomId, userId, { isPlaying: room?.isPlaying ?? false, seekTime })
-}
-
-export function nextTrack(roomId: string, userId: string) {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
-
-  const queueArray = Array.from(room.queue)
-  if (queueArray.length > 0) {
-    const playedItem = queueArray[0]
-    if (playedItem) {
-      room.queue.delete(playedItem)
-      room.history.unshift(playedItem)
-      room.isPlaying = room.queue.size > 0
-      room.seekTime = 0
-      room.updatedAt = Date.now()
+  const [current] = room.queue
+  if (current) {
+    room.queue.delete(current)
+    room.history.unshift(current)
+    if (room.history.length > ROOM_HISTORY_MAX_LENGTH) {
+      room.history.length = ROOM_HISTORY_MAX_LENGTH
     }
+    room.isPlaying = room.queue.size > 0
+    room.seekTime = 0
+    room.updatedAt = Date.now()
   }
-
   return room
 }
 
-export function previousTrack(roomId: string, userId: string) {
-  const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
+export function previousTrack(roomId: string, userId: string): Room {
+  const room = requireRoom(roomId)
+  requireUser(room, userId)
 
   if (room.history.length > 0) {
-    const prevItem = room.history.shift()
-    if (prevItem) {
-      const newQueue = new Set<QueueItem>([prevItem, ...Array.from(room.queue)])
-      room.queue = newQueue
-      room.isPlaying = true
-      room.seekTime = 0
-      room.updatedAt = Date.now()
-    }
+    const prev = room.history.shift()!
+    room.queue = new Set<QueueItem>([prev, ...Array.from(room.queue)])
+    room.isPlaying = true
+    room.seekTime = 0
+    room.updatedAt = Date.now()
   }
-
   return room
 }

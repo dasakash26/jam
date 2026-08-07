@@ -80,7 +80,7 @@ export function QItemCard({
 
         {showRemove && (
           <button
-            onClick={() => onRemove(queueItemId)}
+            onClick={() => onRemove?.(queueItemId)}
             className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             title="Remove from queue"
           >
@@ -99,7 +99,7 @@ export function QItemCard({
             <DropdownMenuContent align="end" className="w-40">
               {showPlayNext && (
                 <DropdownMenuItem
-                  onClick={() => onPlayNext(song)}
+                  onClick={() => onPlayNext?.(song)}
                   className="cursor-pointer text-xs flex items-center gap-2"
                 >
                   <ListPlus className="h-3.5 w-3.5 text-primary" />
@@ -108,7 +108,7 @@ export function QItemCard({
               )}
               {showAddToQueue && (
                 <DropdownMenuItem
-                  onClick={() => onAddToQueue(song)}
+                  onClick={() => onAddToQueue?.(song)}
                   className="cursor-pointer text-xs flex items-center gap-2"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -117,7 +117,7 @@ export function QItemCard({
               )}
               {showRemove && (
                 <DropdownMenuItem
-                  onClick={() => onRemove(queueItemId)}
+                  onClick={() => onRemove?.(queueItemId)}
                   className="cursor-pointer text-xs text-destructive flex items-center gap-2 focus:text-destructive"
                 >
                   <X className="h-3.5 w-3.5" />

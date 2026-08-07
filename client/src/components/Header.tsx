@@ -7,11 +7,7 @@ import { UserProfileBadge } from './user/UserProfileBadge'
 import { HelpDialog } from './HelpDialog'
 import { useParams } from '@tanstack/react-router'
 
-interface HeaderProps {
-  queueLength?: number
-}
-
-export function Header({ queueLength: _queueLength }: HeaderProps) {
+export function Header() {
   const params = useParams({ strict: false })
   const inRoom = Boolean(params.roomId)
 

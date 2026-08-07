@@ -7,7 +7,7 @@ WIP: SPOTIFY JAM (But free and with more features)
 ## Tech Stack
 
 - **Client**: React, TanStack Start, Tailwind CSS, Vite, Cloudflare Workers
-- **Server**: Hono, Bun, yt-dlp
+- **Server**: Hono, Bun, savan-api
 
 ## TODO
 

@@ -6,46 +6,25 @@ import {
   CommandEmpty,
   CommandItem,
 } from '../ui/command'
-import { useMusicPlayer } from '#/store/musicPlayer'
-import { useShallow } from 'zustand/react/shallow'
+import { useSearchSlice } from '#/store/musicPlayer'
+import { useUserStore } from '#/store/user'
+import { addToRoomQueueApi } from '#/utils/api'
 import type { Music } from '#/types'
 import { useEffect, useState } from 'react'
-import { Search, Plus, RefreshCw, AlertCircle, ListMusic } from 'lucide-react'
-
+import { Search, Plus, RefreshCw } from 'lucide-react'
 import { formatDuration } from '#/utils/formatters'
 import { ImageWithFallback } from '../visual/ImageWithFallback'
 import { SearchItemSkeleton } from '../visual/Skeletons'
 import { useParams } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { useUserStore } from '#/store/user'
-import { addToRoomQueueApi } from '#/utils/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-
-export { SearchItemSkeleton }
 
 export function SearchMusic() {
   const [open, setOpen] = useState(false)
   const params = useParams({ strict: false })
-  const queryClient = useQueryClient()
+  const roomId = params.roomId
   const { userId } = useUserStore()
-
-  const handleAddTrack = async (music: Music) => {
-    if (params.roomId) {
-      try {
-        await addToRoomQueueApi(params.roomId, userId, [music])
-        queryClient.invalidateQueries({ queryKey: ['room', params.roomId] })
-        toast.success('Added to Room Queue', {
-          description: `${music.title} • ${music.uploader}`,
-        })
-      } catch (err: unknown) {
-        const errorMsg = err instanceof Error ? err.message : String(err)
-        toast.error('Failed to add to room queue', { description: errorMsg })
-      }
-    } else {
-      pushToQueue(music)
-    }
-    setOpen(false)
-  }
+  const queryClient = useQueryClient()
 
   const {
     query,
@@ -56,38 +35,18 @@ export function SearchMusic() {
     error,
     executeQuery,
     pushToQueue,
-  } = useMusicPlayer(
-    useShallow((state) => ({
-      query: state.query,
-      setQuery: state.setQuery,
-      results: state.results,
-      isLoading: state.isLoading,
-      isError: state.isError,
-      error: state.error,
-      executeQuery: state.executeQuery,
-      pushToQueue: state.pushToQueue,
-    })),
-  )
+  } = useSearchSlice()
 
-  const isPlaylistQuery = /[?&]list=/.test(query) || /^PL[a-zA-Z0-9_-]+$/.test(query.trim())
-
-  const handleAddAllPlaylist = async () => {
-    if (params.roomId) {
-      try {
-        await addToRoomQueueApi(params.roomId, userId, results)
-        queryClient.invalidateQueries({ queryKey: ['room', params.roomId] })
-        toast.success('Playlist Added to Room', {
-          description: `${results.length} tracks added to room queue`,
-        })
-      } catch (err: unknown) {
-        const errorMsg = err instanceof Error ? err.message : String(err)
-        toast.error('Failed to add playlist to room queue', { description: errorMsg })
-      }
-    } else {
-      pushToQueue(results)
-    }
-    setOpen(false)
-  }
+  const addToRoomQueueMutation = useMutation({
+    mutationFn: (song: Music) => addToRoomQueueApi(roomId!, userId, song),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['room', roomId], data.room)
+      toast.success('Added to Room Queue', { description: variables.title })
+    },
+    onError: (err: Error) => {
+      toast.error('Failed to add track to Room Queue', { description: err.message })
+    },
+  })
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -100,6 +59,16 @@ export function SearchMusic() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  const handleSelectTrack = (music: Music) => {
+    if (roomId) {
+      addToRoomQueueMutation.mutate(music)
+    } else {
+      pushToQueue(music)
+      toast.success('Added to Offline Queue', { description: music.title })
+    }
+    setOpen(false)
+  }
+
   return (
     <>
       <Button
@@ -108,8 +77,8 @@ export function SearchMusic() {
         className="flex items-center gap-2 px-3 py-1.5 h-9 text-xs text-muted-foreground font-normal cursor-pointer"
       >
         <Search className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Search or paste playlist...</span>
-        <kbd className="pointer-events-none hidden sm:inline-flex h-4 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+        <span className="hidden sm:inline">Search...</span>
+        <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-[9px]">⌘</span>K
         </kbd>
       </Button>
@@ -121,7 +90,7 @@ export function SearchMusic() {
         className="sm:max-w-lg jam-card overflow-hidden"
       >
         <CommandInput
-          placeholder="Search song or paste YouTube playlist URL..."
+          placeholder="Search song or artist..."
           value={query}
           onValueChange={setQuery}
         />
@@ -136,22 +105,19 @@ export function SearchMusic() {
           )}
 
           {!isLoading && isError && (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-5 text-center my-2 shadow-xs">
-              <div className="rounded-full bg-destructive/10 p-2">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-              </div>
-              <p className="text-xs font-semibold text-foreground">Search Failed</p>
-              <p className="text-xs text-muted-foreground max-w-sm break-words leading-relaxed">
-                {error || 'Failed to fetch results or parse playlist'}
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center my-2">
+              <p className="text-xs font-semibold text-destructive">Search Failed</p>
+              <p className="text-xs text-muted-foreground max-w-sm break-words">
+                {error || 'Failed to fetch search results'}
               </p>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={executeQuery}
-                className="mt-2 h-8 px-3 text-xs gap-1.5 border-border hover:border-primary/50 cursor-pointer"
+                className="mt-1 flex items-center gap-1.5 text-xs text-foreground hover:text-primary"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Retry
+                Retry Search
               </Button>
             </div>
           )}
@@ -162,34 +128,13 @@ export function SearchMusic() {
             </CommandEmpty>
           )}
 
-          {!isLoading && !isError && results.length > 0 && isPlaylistQuery && (
-            <div className="mb-2.5 flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 p-2.5 shadow-xs">
-              <div className="flex items-center gap-2">
-                <ListMusic className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-xs font-medium text-foreground">
-                  Playlist Detected ({results.length} tracks)
-                </span>
-              </div>
-              <Button size="sm" onClick={handleAddAllPlaylist} className="h-7 px-3 text-xs font-medium cursor-pointer shadow-xs">
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Add All
-              </Button>
-            </div>
-          )}
-
-
-
-
-
           {!isLoading &&
             !isError &&
             results.map((music: Music) => (
               <CommandItem
                 key={music.id}
                 value={music.id}
-                onSelect={() => {
-                  handleAddTrack(music)
-                }}
+                onSelect={() => handleSelectTrack(music)}
                 className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-all border border-transparent data-[selected=true]:bg-primary/20 data-[selected=true]:border-primary/50 data-[selected=true]:shadow-xs aria-selected:bg-primary/20 aria-selected:border-primary/50 hover:bg-muted/50"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
