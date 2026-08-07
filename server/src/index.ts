@@ -60,4 +60,5 @@ app.onError((err, c) => {
 export default {
   fetch: app.fetch,
   port: Number(process.env.PORT) || 8787,
+  idleTimeout: 60,
 };

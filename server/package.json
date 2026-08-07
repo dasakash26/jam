@@ -2,7 +2,7 @@
   "name": "server",
   "type": "module",
   "scripts": {
-    "start": "bun src/index.ts",
+    "start": "bun --smol src/index.ts",
     "dev": "bun run --hot src/index.ts",
     "format": "prettier --write .",
     "check": "prettier --check ."

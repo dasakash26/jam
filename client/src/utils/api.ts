@@ -2,17 +2,29 @@ import type { Music, Room } from '#/types'
 import { ApiError } from './errors'
 import { generateId } from './uuid'
 
-export function getApiUrl() {
-  const envUrl = import.meta.env.VITE_API_URL
+const DEFAULT_PROD_API_URL = 'https://jam-bnvu.onrender.com'
+
+export function getApiUrl(): string {
+  const envUrl = import.meta.env.VITE_API_URL || process.env.VITE_API_URL
+  console.log(`[Jam API] Found API URL: ${envUrl}`)
+  let resolvedUrl = ''
+
   if (envUrl && envUrl.trim()) {
-    return envUrl.trim()
+    resolvedUrl = envUrl.trim()
+  } else if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    const isLocal =
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      /^https?:\/\/(\d{1,3}\.){3}\d{1,3}/.test(origin)
+
+    resolvedUrl = isLocal ? origin : DEFAULT_PROD_API_URL
+  } else {
+    resolvedUrl = DEFAULT_PROD_API_URL
   }
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    const port = window.location.port ? `:${window.location.port}` : ''
-    return `${window.location.protocol}//${hostname}${port}`
-  }
-  return 'http://localhost:3000'
+
+  console.log(`[Jam API] Using API URL: ${resolvedUrl}`)
+  return resolvedUrl
 }
 
 async function parseApiError(res: Response, fallbackMessage: string): Promise<ApiError> {
@@ -72,7 +84,9 @@ export async function searchMusic(query: string) {
 
 export async function fetchPlaylist(playlistUrl: string) {
   const baseUrl = getApiUrl()
-  const res = await fetch(`${baseUrl}/api/playlist?url=${encodeURIComponent(playlistUrl)}`)
+  const res = await fetch(
+    `${baseUrl}/api/playlist?url=${encodeURIComponent(playlistUrl)}`,
+  )
 
   if (!res.ok) {
     throw await parseApiError(res, 'Failed to fetch playlist')
@@ -164,7 +178,11 @@ export async function getRoomApi(roomId: string, userId: string) {
   return data.room
 }
 
-export async function addToRoomQueueApi(roomId: string, userId: string, trackOrTracks: Music | Music[]) {
+export async function addToRoomQueueApi(
+  roomId: string,
+  userId: string,
+  trackOrTracks: Music | Music[],
+) {
   const baseUrl = getApiUrl()
   const tracks = Array.isArray(trackOrTracks) ? trackOrTracks : [trackOrTracks]
 
@@ -181,9 +199,11 @@ export async function addToRoomQueueApi(roomId: string, userId: string, trackOrT
   return (await res.json()) as { success: boolean; room: Room }
 }
 
-
-
-export async function removeFromRoomQueueApi(roomId: string, userId: string, queueItemId: string) {
+export async function removeFromRoomQueueApi(
+  roomId: string,
+  userId: string,
+  queueItemId: string,
+) {
   const baseUrl = getApiUrl()
   const res = await fetch(`${baseUrl}/api/rooms/queue/remove`, {
     method: 'POST',
@@ -217,11 +237,19 @@ export async function updateRoomPlaybackApi(
   return (await res.json()) as { success: boolean; room: Room }
 }
 
-export async function toggleRoomPlaybackApi(roomId: string, userId: string, isPlaying?: boolean) {
+export async function toggleRoomPlaybackApi(
+  roomId: string,
+  userId: string,
+  isPlaying?: boolean,
+) {
   return updateRoomPlaybackApi(roomId, userId, { isPlaying })
 }
 
-export async function seekRoomPlaybackApi(roomId: string, userId: string, seekTime: number) {
+export async function seekRoomPlaybackApi(
+  roomId: string,
+  userId: string,
+  seekTime: number,
+) {
   return updateRoomPlaybackApi(roomId, userId, { seekTime })
 }
 
@@ -254,5 +282,3 @@ export async function previousRoomTrackApi(roomId: string, userId: string) {
 
   return (await res.json()) as { success: boolean; room: Room }
 }
-
-

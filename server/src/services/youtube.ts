@@ -3,7 +3,7 @@ export const CONFIG = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   YOUTUBE_URL: 'https://www.youtube.com/',
   AUDIO_FORMAT: 'ba/b',
-  MAX_CACHE_SIZE: 10000,
+  MAX_CACHE_SIZE: 200,
   CACHE_TTL_MS: 3600 * 1000,
   COOKIE_FILE: 'cookie.text',
   YOUTUBE_ID_REGEX: /^[a-zA-Z0-9_-]{11}$/,
@@ -16,8 +16,14 @@ Bun.file(CONFIG.COOKIE_FILE)
     hasCookieFile = exists;
   });
 
-async function runYtDlp(args: string[], timeoutMs = 15000): Promise<string> {
-  const flags = ['--user-agent', CONFIG.USER_AGENT, ...args];
+async function runYtDlp(args: string[], timeoutMs = 30000): Promise<string> {
+  const flags = [
+    '--user-agent',
+    CONFIG.USER_AGENT,
+    '--extractor-args',
+    'youtube:player_client=ios,mweb',
+    ...args,
+  ];
 
   if (hasCookieFile) {
     flags.unshift('--cookies', CONFIG.COOKIE_FILE);
