@@ -20,9 +20,9 @@ const config = defineConfig({
 
   resolve: { tsconfigPaths: true },
   plugins: [
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
     devtools(),
     tanstackStart(),
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tailwindcss(),
     viteReact(),
   ],

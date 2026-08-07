@@ -67,6 +67,15 @@ function resolveImageUrl(image: unknown): string {
 }
 
 function resolveArtistName(song: Record<string, any>): string {
+  if (
+    typeof song.more_info?.primary_artists === 'string' &&
+    song.more_info.primary_artists.trim()
+  ) {
+    return song.more_info.primary_artists
+  }
+  if (typeof song.more_info?.singers === 'string' && song.more_info.singers.trim()) {
+    return song.more_info.singers
+  }
   const primary = song.more_info?.artistMap?.primary_artists
   if (Array.isArray(primary) && primary.length > 0) {
     const names = primary.map((a: any) => a.name).filter(Boolean)
@@ -93,7 +102,7 @@ function mapSongToTrack(song: Record<string, any>): TrackEntry {
     title: cleanHtml(song.title || 'Untitled Track'),
     uploader: cleanHtml(resolveArtistName(song)),
     channel: cleanHtml(song.more_info?.album || ''),
-    duration: parseInt(song.more_info?.duration || '0', 10),
+    duration: parseInt(song.more_info?.duration || song.duration || '0', 10),
     thumbnails: imageUrl ? [{url: imageUrl}] : [],
   }
 }
@@ -122,20 +131,95 @@ export function invalidateCache(songId: string): void {
   urlCache.delete(songId)
 }
 
+function scoreTrack(track: TrackEntry, query: string): number {
+  const q = query.toLowerCase().trim()
+  const title = track.title.toLowerCase()
+  const uploader = (track.uploader || '').toLowerCase()
+
+  let score = 0
+  if (title === q) score += 100
+  else if (title.startsWith(q)) score += 60
+  else if (title.includes(q)) score += 30
+
+  if (uploader === q) score += 40
+  else if (uploader.includes(q)) score += 20
+
+  if (track.duration && track.duration > 0) score += 10
+  if (track.thumbnails && track.thumbnails.length > 0) score += 5
+
+  return score
+}
+
 export async function search(query: string): Promise<TrackEntry[]> {
   const q = query.trim()
-  const url = saavnUrl('search.getResults', {p: '1', n: String(SAAVN_SEARCH_RESULTS_LIMIT), q})
+  if (!q) return []
 
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new UpstreamError(
-      `JioSaavn search failed with status ${res.status}`,
-      res.status as StatusCode,
-    )
+  if (/jiosaavn\.com\/(?:album|featured|playlist)\//i.test(q) || /list=/i.test(q)) {
+    try {
+      const playlistTracks = await getPlaylist(q)
+      if (playlistTracks.length > 0) return playlistTracks
+    } catch {
+      // Fallback to text search
+    }
   }
 
-  const data = (await res.json()) as {results?: Record<string, any>[]}
-  return (data.results ?? []).map(mapSongToTrack)
+  const trackMap = new Map<string, TrackEntry>()
+
+  const autoUrl = saavnUrl('autocomplete.get', {query: q})
+  const searchUrl = saavnUrl('search.getResults', {
+    p: '1',
+    n: String(SAAVN_SEARCH_RESULTS_LIMIT),
+    q,
+  })
+
+  const [autoResult, searchResult] = await Promise.allSettled([
+    fetch(autoUrl).then((r) => (r.ok ? r.json() : null)),
+    fetch(searchUrl).then((r) => (r.ok ? r.json() : null)),
+  ])
+
+  if (autoResult.status === 'fulfilled' && autoResult.value) {
+    const autoData = autoResult.value as {
+      topquery?: {data?: Record<string, any>[]}
+      songs?: {data?: Record<string, any>[]}
+    }
+    const topSongs = (autoData.topquery?.data ?? []).filter((item) => item.type === 'song')
+    const songsData = autoData.songs?.data ?? []
+
+    for (const song of [...topSongs, ...songsData]) {
+      if (song.id) {
+        trackMap.set(song.id, mapSongToTrack(song))
+      }
+    }
+  }
+
+  if (searchResult.status === 'fulfilled' && searchResult.value) {
+    const searchData = searchResult.value as {results?: Record<string, any>[]}
+    const results = (searchData.results ?? []).filter(
+      (song) => song.type === 'song' || song.more_info?.encrypted_media_url,
+    )
+
+    for (const song of results) {
+      if (song.id) {
+        const existing = trackMap.get(song.id)
+        const mapped = mapSongToTrack(song)
+        if (!existing) {
+          trackMap.set(song.id, mapped)
+        } else {
+          trackMap.set(song.id, {
+            ...existing,
+            duration: existing.duration || mapped.duration,
+            thumbnails: existing.thumbnails?.length ? existing.thumbnails : mapped.thumbnails,
+            uploader: existing.uploader !== 'Unknown Artist' ? existing.uploader : mapped.uploader,
+          })
+        }
+      }
+    }
+  }
+
+  const tracks = Array.from(trackMap.values())
+  tracks.sort((a, b) => scoreTrack(b, q) - scoreTrack(a, q))
+
+  return tracks
 }
 
 export async function getPlaylist(input: string): Promise<TrackEntry[]> {

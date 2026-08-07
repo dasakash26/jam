@@ -104,7 +104,9 @@ export function MusicCard({
               <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[8px] uppercase">
                 {getInitials(addedBy.userName)}
               </span>
-              <span className="max-w-[110px] truncate text-foreground/90 font-semibold">{addedBy.userName}</span>
+              <span className="max-w-[110px] truncate text-foreground/90 font-semibold">
+                {addedBy.userName}
+              </span>
             </div>
           )}
         </div>

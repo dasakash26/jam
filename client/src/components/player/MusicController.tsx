@@ -117,7 +117,7 @@ export function MusicController({
       }, delayMs)
     } else {
       toast.error('Audio Stream Failed', {
-        description: `Unable to stream "${s.title}". The YouTube audio stream link expired or upstream server returned an error. Skipping track...`,
+        description: `Unable to stream "${s.title}". The audio stream link expired or upstream server returned an error. Skipping track...`,
       })
       onError?.()
     }

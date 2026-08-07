@@ -7,7 +7,10 @@ export function formatDuration(seconds: number): string {
 
 export function getInitials(name: string): string {
   if (!name || typeof name !== 'string') return '?'
-  const parts = name.trim().split(/[\s_]+/).filter(Boolean)
+  const parts = name
+    .trim()
+    .split(/[\s_]+/)
+    .filter(Boolean)
   if (parts.length >= 2) {
     const firstChar = parts[0][0] || ''
     const secondChar = parts[1][0] || ''
@@ -15,4 +18,3 @@ export function getInitials(name: string): string {
   }
   return name.slice(0, 2).toUpperCase()
 }
-

@@ -31,4 +31,3 @@ export interface Room {
   seekTime: number
   updatedAt: number
 }
-

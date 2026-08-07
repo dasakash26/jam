@@ -100,11 +100,14 @@ export const useMusicPlayer = create<MusicPlayer>()(
       },
 
       playNextTrack: (m) => {
-        const item: QueueItem = { queueItemId: generateId(QUEUE_ITEM_ID_PREFIX), track: m }
+        const item: QueueItem = {
+          queueItemId: generateId(QUEUE_ITEM_ID_PREFIX),
+          track: m,
+        }
         set((s) => {
           if (s.queue.length === 0) return { queue: [item] }
           const rest = s.queue.slice(1).filter((q) => q.track.id !== m.id)
-          return { queue: [s.queue[0]!, item, ...rest] }
+          return { queue: [s.queue[0], item, ...rest] }
         })
         toast('Playing Next', { description: `${m.title} • ${m.uploader}` })
       },
@@ -113,7 +116,7 @@ export const useMusicPlayer = create<MusicPlayer>()(
         set((s) => {
           if (s.queue.length === 0) return s
           const [cur, ...rem] = s.queue
-          return { history: [cur!, ...s.history], queue: rem }
+          return { history: [cur, ...s.history], queue: rem }
         })
       },
 
@@ -121,7 +124,7 @@ export const useMusicPlayer = create<MusicPlayer>()(
         set((s) => {
           if (s.history.length === 0) return s
           const [prev, ...remHistory] = s.history
-          return { history: remHistory, queue: [prev!, ...s.queue] }
+          return { history: remHistory, queue: [prev, ...s.queue] }
         })
       },
 
@@ -144,7 +147,9 @@ export const useMusicPlayer = create<MusicPlayer>()(
       partialize: (s) => ({ queue: s.queue, history: s.history }),
       onRehydrateStorage: () => (state) => {
         const ensureQueueItem = (item: any): QueueItem =>
-          item?.track ? item : { queueItemId: generateId(QUEUE_ITEM_ID_PREFIX), track: item }
+          item?.track
+            ? item
+            : { queueItemId: generateId(QUEUE_ITEM_ID_PREFIX), track: item }
 
         if (state?.queue) state.queue = state.queue.map(ensureQueueItem)
         if (state?.history) state.history = state.history.map(ensureQueueItem)

@@ -1,7 +1,12 @@
 import { useEffect } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
-import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { Home, Radio } from 'lucide-react'
 
 import {
@@ -112,7 +117,9 @@ function RoomPage() {
     mutationFn: (song: Music | Music[]) => addToRoomQueueApi(roomId, userId, song),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['room', roomId], data.room)
-      const title = Array.isArray(variables) ? `${variables.length} tracks` : variables.title
+      const title = Array.isArray(variables)
+        ? `${variables.length} tracks`
+        : variables.title
       toast.success('Added to Room Queue', { description: title })
     },
 
@@ -122,7 +129,8 @@ function RoomPage() {
   })
 
   const removeFromQueueMutation = useMutation({
-    mutationFn: (queueItemId: string) => removeFromRoomQueueApi(roomId, userId, queueItemId),
+    mutationFn: (queueItemId: string) =>
+      removeFromRoomQueueApi(roomId, userId, queueItemId),
     onSuccess: (data) => {
       queryClient.setQueryData(['room', roomId], data.room)
       toast.info('Removed from Room Queue')
@@ -188,7 +196,9 @@ function RoomPage() {
             history={room.history}
             onAddToQueue={(song) => addToQueueMutation.mutate(song)}
             onPlayNext={(song) => addToQueueMutation.mutate(song)}
-            onRemoveFromQueue={(queueItemId) => removeFromQueueMutation.mutate(queueItemId)}
+            onRemoveFromQueue={(queueItemId) =>
+              removeFromQueueMutation.mutate(queueItemId)
+            }
           />
         </div>
         <div className="fixed bottom-3 sm:bottom-4 left-0 right-0 z-50 px-3 sm:px-6 max-w-4xl mx-auto pointer-events-none">

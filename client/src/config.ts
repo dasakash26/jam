@@ -8,3 +8,4 @@ export const QUEUE_ITEM_ID_PREFIX = 'item_'
 export const USER_ID_PREFIX = 'user_'
 
 export const BASE_API_URL = 'https://jam-bnvu.onrender.com'
+// export const BASE_API_URL = 'http://localhost:8787'

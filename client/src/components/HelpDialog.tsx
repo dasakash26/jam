@@ -43,12 +43,14 @@ export function HelpDialog({ className }: { className?: string }) {
               <Search className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-              <span className="font-semibold text-foreground truncate">Search or Playlist</span>
-              <span className="text-[10px] text-muted-foreground font-medium shrink-0">Paste link or ⌘K</span>
+              <span className="font-semibold text-foreground truncate">
+                Search or Playlist
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                Paste link or ⌘K
+              </span>
             </div>
           </div>
-
-
 
           {/* Step 2: Create Room */}
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/30 border border-border/40 min-w-0">
@@ -56,8 +58,12 @@ export function HelpDialog({ className }: { className?: string }) {
               <Radio className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-              <span className="font-semibold text-foreground truncate">Create a Room</span>
-              <span className="text-[10px] text-muted-foreground font-medium shrink-0">Click Join/Create Room</span>
+              <span className="font-semibold text-foreground truncate">
+                Create a Room
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                Click Join/Create Room
+              </span>
             </div>
           </div>
 
@@ -67,8 +73,12 @@ export function HelpDialog({ className }: { className?: string }) {
               <Copy className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-              <span className="font-semibold text-foreground truncate">Share Room Link</span>
-              <span className="text-[10px] text-muted-foreground font-medium shrink-0">Room Badge ➔ Copy Link</span>
+              <span className="font-semibold text-foreground truncate">
+                Share Room Link
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                Room Badge ➔ Copy Link
+              </span>
             </div>
           </div>
 
@@ -79,8 +89,12 @@ export function HelpDialog({ className }: { className?: string }) {
             </div>
             <div className="min-w-0 flex-1 flex items-center gap-1.5">
               <span className="font-semibold text-foreground truncate">Queued by</span>
-              <span className="inline-flex px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold text-[9px] border border-primary/30 shrink-0">AD</span>
-              <span className="text-[10px] text-muted-foreground truncate">(User Initials)</span>
+              <span className="inline-flex px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold text-[9px] border border-primary/30 shrink-0">
+                AD
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate">
+                (User Initials)
+              </span>
             </div>
           </div>
         </div>

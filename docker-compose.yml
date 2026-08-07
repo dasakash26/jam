@@ -10,11 +10,17 @@ services:
       - "8787:8787"
     env_file:
       - ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules
 
   client:
     build:
       context: ./client
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: jam-client
     ports:
       - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
