@@ -14,7 +14,7 @@ const config = defineConfig({
     watch: { usePolling: true },
     proxy: {
       '/api': {
-        target: process.env.VITE_SERVER_URL || 'http://localhost:8787',
+        target: process.env.VITE_SERVER_API_URL || process.env.VITE_SERVER_URL || 'http://server:8787',
         changeOrigin: true,
       },
     },

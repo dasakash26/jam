@@ -16,7 +16,7 @@ Bun.file(CONFIG.COOKIE_FILE)
     hasCookieFile = exists;
   });
 
-async function runYtDlp(args: string[]): Promise<string> {
+async function runYtDlp(args: string[], timeoutMs = 15000): Promise<string> {
   const flags = ['--user-agent', CONFIG.USER_AGENT, ...args];
 
   if (hasCookieFile) {
@@ -25,10 +25,18 @@ async function runYtDlp(args: string[]): Promise<string> {
 
   const proc = Bun.spawn(['yt-dlp', ...flags]);
 
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    const timer = setTimeout(() => {
+      proc.kill();
+      reject(new Error(`yt-dlp request timed out after ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+    proc.exited.finally(() => clearTimeout(timer));
+  });
+
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
-    proc.exited,
+    Promise.race([proc.exited, timeoutPromise]),
   ]);
 
   if (exitCode !== 0) {
@@ -53,10 +61,28 @@ export interface YtDlpEntry {
 }
 
 export async function search(query: string): Promise<YtDlpEntry[]> {
-  const hasAudioKeyword = /\b(song|music|audio|track|remix|lyrics|official|video)\b/i.test(query);
-  const searchQuery = hasAudioKeyword ? query : `${query} song`;
+  const cleanQuery = query.trim();
 
-  const stdout = await runYtDlp(['--flat-playlist', '-J', `ytsearch10:${searchQuery}`]);
+  // Direct single video URL or ID interception
+  const directMatch = cleanQuery.match(/(?:v=|\/v\/|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  if (directMatch && directMatch[1]) {
+    const videoId = directMatch[1];
+    const stdout = await runYtDlp(['--flat-playlist', '-J', '--', `https://www.youtube.com/watch?v=${videoId}`]);
+    try {
+      const parsed = JSON.parse(stdout) as YtDlpEntry & { entries?: YtDlpEntry[] };
+      if (parsed.entries && parsed.entries.length > 0) {
+        return parsed.entries;
+      }
+      return parsed.id ? [parsed] : [];
+    } catch {
+      // Fallback to standard search if direct parsing fails
+    }
+  }
+
+  const hasAudioKeyword = /\b(song|music|audio|track|remix|lyrics|official|video)\b/i.test(cleanQuery);
+  const searchQuery = hasAudioKeyword ? cleanQuery : `${cleanQuery} song`;
+
+  const stdout = await runYtDlp(['--flat-playlist', '-J', '--', `ytsearch10:${searchQuery}`]);
   try {
     const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
     return parsed.entries || [];
@@ -65,6 +91,36 @@ export async function search(query: string): Promise<YtDlpEntry[]> {
     throw new Error(`Failed to parse yt-dlp search JSON output: ${message}`);
   }
 }
+
+export function extractPlaylistUrl(input: string): string {
+  const listMatch = input.match(/[?&]list=([a-zA-Z0-9_-]+)/) || input.match(/^(PL[a-zA-Z0-9_-]+)$/);
+  if (listMatch && listMatch[1]) {
+    return `https://www.youtube.com/playlist?list=${listMatch[1]}`;
+  }
+  return input;
+}
+
+export async function getPlaylist(input: string): Promise<YtDlpEntry[]> {
+  const targetUrl = extractPlaylistUrl(input);
+  const stdout = await runYtDlp(['--flat-playlist', '--playlist-end', '100', '-J', '--', targetUrl]);
+  try {
+    const parsed = JSON.parse(stdout) as { entries?: YtDlpEntry[] };
+    return (parsed.entries || []).filter(
+      (entry) =>
+        entry &&
+        entry.id &&
+        entry.title &&
+        !entry.title.includes('[Deleted video]') &&
+        !entry.title.includes('[Private video]'),
+    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to parse yt-dlp playlist JSON output: ${message}`);
+  }
+}
+
+
+
 
 const urlCache = new Map<string, { url: string; expiresAt: number }>();
 

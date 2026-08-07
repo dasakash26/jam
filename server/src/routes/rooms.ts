@@ -13,6 +13,7 @@ import {
   seekPlayback,
   serializeRoom,
   togglePlayback,
+  updatePlayback,
 } from '../services/rooms'
 import { handleValidationError } from '../utils/errors'
 
@@ -49,13 +50,20 @@ const musicSchema = z.object({
 const addToQueueSchema = z.object({
   roomId: z.string().trim().min(1),
   userId: z.string().trim().min(1),
-  track: musicSchema,
+  tracks: z.array(musicSchema).min(1),
 })
 
 const removeFromQueueSchema = z.object({
   roomId: z.string().trim().min(1),
   userId: z.string().trim().min(1),
   queueItemId: z.string().trim().min(1),
+})
+
+const updatePlaybackSchema = z.object({
+  roomId: z.string().trim().min(1),
+  userId: z.string().trim().min(1),
+  isPlaying: z.boolean(),
+  seekTime: z.number().min(0),
 })
 
 const playbackToggleSchema = z.object({
@@ -103,16 +111,26 @@ const router = new Hono()
     return c.json({ success: true })
   })
   .post('/queue/add', sValidator('json', addToQueueSchema, handleValidationError), (c) => {
-    const { roomId, userId, track } = c.req.valid('json')
-    const room = addToQueue(roomId, userId, track)
+    const { roomId, userId, tracks } = c.req.valid('json')
+    const room = addToQueue(roomId, userId, tracks)
     return c.json({
       success: true,
       room: serializeRoom(room),
     })
   })
+
+
   .post('/queue/remove', sValidator('json', removeFromQueueSchema, handleValidationError), (c) => {
     const { roomId, userId, queueItemId } = c.req.valid('json')
     const room = removeFromQueue(roomId, userId, queueItemId)
+    return c.json({
+      success: true,
+      room: serializeRoom(room),
+    })
+  })
+  .post('/playback/update', sValidator('json', updatePlaybackSchema, handleValidationError), (c) => {
+    const { roomId, userId, isPlaying, seekTime } = c.req.valid('json')
+    const room = updatePlayback(roomId, userId, { isPlaying, seekTime })
     return c.json({
       success: true,
       room: serializeRoom(room),

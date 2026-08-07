@@ -10,7 +10,8 @@ import { useMusicPlayer } from '#/store/musicPlayer'
 import { useShallow } from 'zustand/react/shallow'
 import type { Music } from '#/types'
 import { useEffect, useState } from 'react'
-import { Search, Plus, RefreshCw } from 'lucide-react'
+import { Search, Plus, RefreshCw, AlertCircle, ListMusic } from 'lucide-react'
+
 import { formatDuration } from '#/utils/formatters'
 import { ImageWithFallback } from '../visual/ImageWithFallback'
 import { SearchItemSkeleton } from '../visual/Skeletons'
@@ -31,7 +32,7 @@ export function SearchMusic() {
   const handleAddTrack = async (music: Music) => {
     if (params.roomId) {
       try {
-        await addToRoomQueueApi(params.roomId, userId, music)
+        await addToRoomQueueApi(params.roomId, userId, [music])
         queryClient.invalidateQueries({ queryKey: ['room', params.roomId] })
         toast.success('Added to Room Queue', {
           description: `${music.title} • ${music.uploader}`,
@@ -68,6 +69,25 @@ export function SearchMusic() {
     })),
   )
 
+  const isPlaylistQuery = /[?&]list=/.test(query) || /^PL[a-zA-Z0-9_-]+$/.test(query.trim())
+
+  const handleAddAllPlaylist = async () => {
+    if (params.roomId) {
+      try {
+        await addToRoomQueueApi(params.roomId, userId, results)
+        queryClient.invalidateQueries({ queryKey: ['room', params.roomId] })
+        toast.success('Playlist Added to Room', {
+          description: `${results.length} tracks added to room queue`,
+        })
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        toast.error('Failed to add playlist to room queue', { description: errorMsg })
+      }
+    } else {
+      pushToQueue(results)
+    }
+    setOpen(false)
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -88,7 +108,7 @@ export function SearchMusic() {
         className="flex items-center gap-2 px-3 py-1.5 h-9 text-xs text-muted-foreground font-normal cursor-pointer"
       >
         <Search className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Search...</span>
+        <span className="hidden sm:inline">Search or paste playlist...</span>
         <kbd className="pointer-events-none hidden sm:inline-flex h-4 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-[9px]">⌘</span>K
         </kbd>
@@ -101,7 +121,7 @@ export function SearchMusic() {
         className="sm:max-w-lg jam-card overflow-hidden"
       >
         <CommandInput
-          placeholder="Search song or artist..."
+          placeholder="Search song or paste YouTube playlist URL..."
           value={query}
           onValueChange={setQuery}
         />
@@ -116,19 +136,22 @@ export function SearchMusic() {
           )}
 
           {!isLoading && isError && (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center my-2">
-              <p className="text-xs font-semibold text-destructive">Search Failed</p>
-              <p className="text-xs text-muted-foreground max-w-sm break-words">
-                {error || 'Failed to fetch search results'}
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-5 text-center my-2 shadow-xs">
+              <div className="rounded-full bg-destructive/10 p-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">Search Failed</p>
+              <p className="text-xs text-muted-foreground max-w-sm break-words leading-relaxed">
+                {error || 'Failed to fetch results or parse playlist'}
               </p>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={executeQuery}
-                className="mt-1 flex items-center gap-1.5 text-xs text-foreground hover:text-primary"
+                className="mt-2 h-8 px-3 text-xs gap-1.5 border-border hover:border-primary/50 cursor-pointer"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Retry Search
+                Retry
               </Button>
             </div>
           )}
@@ -138,6 +161,25 @@ export function SearchMusic() {
               No results found for &quot;{query}&quot;.
             </CommandEmpty>
           )}
+
+          {!isLoading && !isError && results.length > 0 && isPlaylistQuery && (
+            <div className="mb-2.5 flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 p-2.5 shadow-xs">
+              <div className="flex items-center gap-2">
+                <ListMusic className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs font-medium text-foreground">
+                  Playlist Detected ({results.length} tracks)
+                </span>
+              </div>
+              <Button size="sm" onClick={handleAddAllPlaylist} className="h-7 px-3 text-xs font-medium cursor-pointer shadow-xs">
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Add All
+              </Button>
+            </div>
+          )}
+
+
+
+
 
           {!isLoading &&
             !isError &&

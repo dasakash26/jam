@@ -19,12 +19,14 @@ WIP: SPOTIFY JAM (But free and with more features)
 - [x] Empty, loading & error states with
 - [x] Connect to room ui, and server state sync logic
 - [x] Mobile responsive layout & compact player stack
+- [x] seek auto trigger with locking
 - [ ] Queue controls logic: play next, play again, remove, move song
 - [ ] Drag & drop queue reordering
 
 - [x] Fix: yt-dlp rate limiting
 - [x] Room connection api, server room state management
 - [x] Basic multiclient sync via polling
+- [x] Use two diff interval for sweep, and stale
 - [ ] Real time multiclient sync via WebSockets (`/jam/:roomId`)
 - [ ] Host control permissions & song upvoting for rooms
 - [ ] Persist active sessions (Redis)

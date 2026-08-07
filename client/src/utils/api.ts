@@ -1,6 +1,6 @@
 import type { Music, Room } from '#/types'
 import { ApiError } from './errors'
-import { safeUUID } from './uuid'
+import { generateId } from './uuid'
 
 export function getApiUrl() {
   if (typeof window !== 'undefined') {
@@ -70,6 +70,35 @@ export async function searchMusic(query: string) {
   return musicList
 }
 
+export async function fetchPlaylist(playlistUrl: string) {
+  const baseUrl = getApiUrl()
+  const res = await fetch(`${baseUrl}/api/playlist?url=${encodeURIComponent(playlistUrl)}`)
+
+  if (!res.ok) {
+    throw await parseApiError(res, 'Failed to fetch playlist')
+  }
+
+  const resj = await res.json()
+  const musicList: Music[] = resj.map(
+    (raw: {
+      id: string
+      title: string
+      uploader?: string
+      channel?: string
+      duration?: number
+      thumbnails?: { url: string }[]
+    }) => ({
+      id: raw.id,
+      title: raw.title,
+      uploader: raw.uploader || raw.channel || 'Unknown',
+      duration: Number(raw.duration) || 0,
+      thumbnailUrl: raw.thumbnails?.[raw.thumbnails.length - 1]?.url || '',
+    }),
+  )
+
+  return musicList
+}
+
 export function getStreamUrl(songId: string) {
   return `${getApiUrl()}/api/stream/${songId}`
 }
@@ -80,7 +109,7 @@ export async function createRoomApi(roomName: string, userName: string, userId?:
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      userId: userId || safeUUID(),
+      userId: userId || generateId('user_'),
       userName,
       roomName,
     }),
@@ -100,7 +129,7 @@ export async function joinRoomApi(roomId: string, userName: string, userId?: str
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       roomId,
-      userId: userId || safeUUID(),
+      userId: userId || generateId('user_'),
       userName,
     }),
   })
@@ -135,20 +164,24 @@ export async function getRoomApi(roomId: string, userId: string) {
   return data.room
 }
 
-export async function addToRoomQueueApi(roomId: string, userId: string, track: Music) {
+export async function addToRoomQueueApi(roomId: string, userId: string, trackOrTracks: Music | Music[]) {
   const baseUrl = getApiUrl()
+  const tracks = Array.isArray(trackOrTracks) ? trackOrTracks : [trackOrTracks]
+
   const res = await fetch(`${baseUrl}/api/rooms/queue/add`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roomId, userId, track }),
+    body: JSON.stringify({ roomId, userId, tracks }),
   })
 
   if (!res.ok) {
-    throw await parseApiError(res, 'Failed to add track to room queue')
+    throw await parseApiError(res, 'Failed to add track(s) to room queue')
   }
 
   return (await res.json()) as { success: boolean; room: Room }
 }
+
+
 
 export async function removeFromRoomQueueApi(roomId: string, userId: string, queueItemId: string) {
   const baseUrl = getApiUrl()
@@ -165,34 +198,31 @@ export async function removeFromRoomQueueApi(roomId: string, userId: string, que
   return (await res.json()) as { success: boolean; room: Room }
 }
 
-export async function toggleRoomPlaybackApi(roomId: string, userId: string, isPlaying?: boolean) {
+export async function updateRoomPlaybackApi(
+  roomId: string,
+  userId: string,
+  payload: { isPlaying: boolean; seekTime: number },
+) {
   const baseUrl = getApiUrl()
-  const res = await fetch(`${baseUrl}/api/rooms/playback/toggle`, {
+  const res = await fetch(`${baseUrl}/api/rooms/playback/update`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roomId, userId, isPlaying }),
+    body: JSON.stringify({ roomId, userId, ...payload }),
   })
 
   if (!res.ok) {
-    throw await parseApiError(res, 'Failed to toggle room playback')
+    throw await parseApiError(res, 'Failed to update room playback')
   }
 
   return (await res.json()) as { success: boolean; room: Room }
 }
 
+export async function toggleRoomPlaybackApi(roomId: string, userId: string, isPlaying?: boolean) {
+  return updateRoomPlaybackApi(roomId, userId, { isPlaying })
+}
+
 export async function seekRoomPlaybackApi(roomId: string, userId: string, seekTime: number) {
-  const baseUrl = getApiUrl()
-  const res = await fetch(`${baseUrl}/api/rooms/playback/seek`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roomId, userId, seekTime }),
-  })
-
-  if (!res.ok) {
-    throw await parseApiError(res, 'Failed to seek room playback')
-  }
-
-  return (await res.json()) as { success: boolean; room: Room }
+  return updateRoomPlaybackApi(roomId, userId, { seekTime })
 }
 
 export async function nextRoomTrackApi(roomId: string, userId: string) {

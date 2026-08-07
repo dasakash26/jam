@@ -1,11 +1,40 @@
 import type { Music, QueueItem, Room } from '../../types'
 import { NotFoundError } from '../utils/errors'
 
-const PING_INTERVAL = 5 * 1000
+const SWEEP_INTERVAL = 15 * 1000
+const STALE_THRESHOLD = 45 * 1000
 const rooms = new Map<string, Room>()
 
+let cleanUpInterval
+
+if (!cleanUpInterval) {
+  cleanUpInterval = setInterval(() => {
+    rooms.forEach((room) => {
+      room.users.forEach((user) => {
+        const delta = Date.now() - user.pingedAt
+        if (delta > STALE_THRESHOLD) room.users.delete(user.userId)
+      })
+      if (room.users.size === 0) {
+        rooms.delete(room.id)
+      }
+    })
+  }, SWEEP_INTERVAL)
+}
+
+function generateId(prefix = '', length = 6): string {
+  const chars = '23456789abcdefghjkmnpqrstuvwxyz'
+  let id = ''
+  do {
+    id = prefix
+    for (let i = 0; i < length; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+  } while (rooms.has(id))
+  return id
+}
+
 export function createRoom(roomName: string, userId: string, userName: string) {
-  const roomId = crypto.randomUUID()
+  const roomId = generateId('room_', 6)
 
   // setup room
   rooms.set(roomId, {
@@ -30,19 +59,10 @@ export function joinRoom(roomId: string, userId: string, userName: string): Room
     throw new NotFoundError(`Unable to join room "${roomId}". Room does not exist.`)
   }
 
-  const existingUser = room.users.get(userId)
-  if (existingUser?.timeOutId) {
-    clearTimeout(existingUser.timeOutId)
-  }
-
   room.users.set(userId, {
     userId,
     userName,
-    timeOutId: setTimeout(() => {
-      try {
-        leaveRoom(roomId, userId)
-      } catch {}
-    }, PING_INTERVAL),
+    pingedAt: Date.now(),
   })
 
   return room
@@ -51,11 +71,6 @@ export function joinRoom(roomId: string, userId: string, userName: string): Room
 export function leaveRoom(roomId: string, userId: string): void {
   const room = rooms.get(roomId)
   if (!room) return
-
-  const user = room.users.get(userId)
-  if (user?.timeOutId) {
-    clearTimeout(user.timeOutId)
-  }
 
   room.users.delete(userId)
   if (room.users.size === 0) {
@@ -74,28 +89,19 @@ export function getRoom(roomId: string, userId: string): Room {
     throw new NotFoundError(`session expired.`)
   }
 
-  if (user.timeOutId) {
-    clearTimeout(user.timeOutId)
-  }
-
-  user.timeOutId = setTimeout(() => {
-    try {
-      leaveRoom(roomId, userId)
-    } catch {}
-  }, PING_INTERVAL)
-
+  user.pingedAt = Date.now()
   return room
 }
 
 export function serializeRoom(room: Room) {
   return {
     ...room,
-    users: Array.from(room.users.values()).map(({ timeOutId, ...u }) => u),
+    users: Array.from(room.users.values()),
     queue: Array.from(room.queue),
   }
 }
 
-export function addToQueue(roomId: string, userId: string, track: Music) {
+export function addToQueue(roomId: string, userId: string, tracks: Music[]) {
   const room = rooms.get(roomId)
   if (!room) {
     throw new NotFoundError(`Room "${roomId}" was not found`)
@@ -106,17 +112,21 @@ export function addToQueue(roomId: string, userId: string, track: Music) {
     throw new NotFoundError(`session expired.`)
   }
 
-  room.queue.add({
-    queueItemId: crypto.randomUUID(),
-    track,
-    addedBy: {
-      userId,
-      userName: user.userName,
-    },
-  })
+  for (const track of tracks) {
+    room.queue.add({
+      queueItemId: generateId('item_', 6),
+      track,
+      addedBy: {
+        userId,
+        userName: user.userName,
+      },
+    })
+  }
 
   return room
 }
+
+
 
 export function removeFromQueue(roomId: string, userId: string, queueItemId: string) {
   const room = rooms.get(roomId)
@@ -140,7 +150,11 @@ export function removeFromQueue(roomId: string, userId: string, queueItemId: str
   return room
 }
 
-export function togglePlayback(roomId: string, userId: string, isPlaying?: boolean) {
+export function updatePlayback(
+  roomId: string,
+  userId: string,
+  payload: { isPlaying: boolean; seekTime: number },
+) {
   const room = rooms.get(roomId)
   if (!room) {
     throw new NotFoundError(`Room "${roomId}" was not found`)
@@ -151,31 +165,21 @@ export function togglePlayback(roomId: string, userId: string, isPlaying?: boole
     throw new NotFoundError(`session expired.`)
   }
 
-  const nextIsPlaying = typeof isPlaying === 'boolean' ? isPlaying : !room.isPlaying
-  if (room.isPlaying && !nextIsPlaying) {
-    const elapsed = (Date.now() - room.updatedAt) / 1000
-    room.seekTime = Math.max(0, room.seekTime + elapsed)
-  }
-
-  room.isPlaying = nextIsPlaying
+  room.seekTime = Math.max(0, payload.seekTime)
+  room.isPlaying = payload.isPlaying
   room.updatedAt = Date.now()
   return room
 }
 
+export function togglePlayback(roomId: string, userId: string, isPlaying?: boolean) {
+  const room = rooms.get(roomId)
+  const nextIsPlaying = typeof isPlaying === 'boolean' ? isPlaying : !(room?.isPlaying ?? false)
+  return updatePlayback(roomId, userId, { isPlaying: nextIsPlaying, seekTime: room?.seekTime ?? 0 })
+}
+
 export function seekPlayback(roomId: string, userId: string, seekTime: number) {
   const room = rooms.get(roomId)
-  if (!room) {
-    throw new NotFoundError(`Room "${roomId}" was not found`)
-  }
-
-  const user = room.users.get(userId)
-  if (!user) {
-    throw new NotFoundError(`session expired.`)
-  }
-
-  room.seekTime = Math.max(0, seekTime)
-  room.updatedAt = Date.now()
-  return room
+  return updatePlayback(roomId, userId, { isPlaying: room?.isPlaying ?? false, seekTime })
 }
 
 export function nextTrack(roomId: string, userId: string) {

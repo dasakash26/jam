@@ -5,6 +5,7 @@ import { getStreamUrl } from '#/utils/api'
 import { toast } from 'sonner'
 import { TrackInfo } from './TrackInfo'
 import type { Music } from '#/types'
+import { useWakeLock } from '#/hooks/WakeLock'
 
 interface MusicControllerProps {
   currentSong?: Music
@@ -18,7 +19,8 @@ interface MusicControllerProps {
   onError?: () => void
 }
 
-const IGNORE_SEEK_DELTA = 1
+const IGNORE_LAG_DELTA = 0.3
+const SEEK_LOCK_INTERVAL = 0.5
 
 export function MusicController({
   currentSong: s,
@@ -34,9 +36,12 @@ export function MusicController({
   const hasTrack = !!s
   const playerRef = useRef<AudioPlayer>(null)
   const isSeekingRef = useRef(false)
+  const lastSeekedAt = useRef<number | null>(null)
   const retryCountRef = useRef(0)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [streamSrc, setStreamSrc] = useState('')
+
+  useWakeLock(isPlaying)
 
   useEffect(() => {
     retryCountRef.current = 0
@@ -51,32 +56,55 @@ export function MusicController({
     if (!player || targetSeekTime == undefined) return
 
     const audio = player.audio.current
-    if (
-      Math.abs(audio.currentTime - targetSeekTime) > IGNORE_SEEK_DELTA &&
-      !isSeekingRef.current
-    ) {
+    const lagTime = audio.currentTime - targetSeekTime
+
+    console.log('[audio sync] ', lagTime)
+    if (Math.abs(lagTime) > IGNORE_LAG_DELTA && !isSeekingRef.current) {
       audio.currentTime = targetSeekTime
     }
   }, [targetSeekTime])
 
   useEffect(() => {
-    console.log('[Music Controll] isPlaying', isPlaying)
     const player = playerRef.current
     if (!player) return
     const audio = player.audio.current
+
+    let cleanupListeners: (() => void) | null = null
+
     if (audio.paused && isPlaying) {
-      console.log('[Music Controll] toggling playback')
-      audio.play()
+      audio.play().catch((err: DOMException) => {
+        if (err.name === 'NotAllowedError') {
+          const resumeAudio = () => {
+            if (audio.paused) {
+              audio.play().catch(() => {})
+            }
+            cleanupListeners?.()
+          }
+
+          cleanupListeners = () => {
+            window.removeEventListener('click', resumeAudio)
+            window.removeEventListener('touchstart', resumeAudio)
+            window.removeEventListener('keydown', resumeAudio)
+          }
+
+          window.addEventListener('click', resumeAudio)
+          window.addEventListener('touchstart', resumeAudio)
+          window.addEventListener('keydown', resumeAudio)
+        }
+      })
     } else if (!audio.paused && !isPlaying) {
-      console.log('[Music Controll] toggling playback')
       audio.pause()
+    }
+
+    return () => {
+      cleanupListeners?.()
     }
   }, [isPlaying])
 
   const handleAudioError = () => {
     if (!s) return
 
-    if (retryCountRef.current < 3) {
+    if (retryCountRef.current < 5) {
       retryCountRef.current += 1
       const delayMs = Math.pow(2, retryCountRef.current - 1) * 1000
       toast.warning(`Retrying playback for "${s.title}"`, {
@@ -118,7 +146,13 @@ export function MusicController({
             }}
             onSeeked={(e) => {
               isSeekingRef.current = false
+              if (lastSeekedAt.current) {
+                const delayS = (Date.now() - lastSeekedAt.current) / 1000
+                if (delayS <= SEEK_LOCK_INTERVAL) return
+              }
+
               onSeek?.((e.target as HTMLAudioElement).currentTime)
+              lastSeekedAt.current = Date.now()
             }}
             onPlay={() => onPlayPause?.(true)}
             onPause={() => onPlayPause?.(false)}

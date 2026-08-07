@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { CONFIG, getStreamUrl, invalidateCache, search } from '../services/youtube';
+import { CONFIG, getPlaylist, getStreamUrl, invalidateCache, search } from '../services/youtube';
 import { AppError, BadRequestError, UpstreamError, type StatusCode } from '../utils/errors';
 
 const router = new Hono()
@@ -19,6 +19,23 @@ const router = new Hono()
       throw new AppError(message || `Search failed for query "${query}".`, 500);
     }
   })
+  .get('/playlist', async (c) => {
+    const url = c.req.query('url')?.trim() || c.req.query('q')?.trim();
+    if (!url) {
+      throw new BadRequestError("Missing required query parameter 'url' or 'q'.");
+    }
+
+    try {
+      const res = await getPlaylist(url);
+      return c.json(res);
+    } catch (e: unknown) {
+      if (e instanceof AppError) throw e;
+      console.error('Playlist Fetch Error:', e);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new AppError(message || `Failed to fetch playlist for "${url}".`, 500);
+    }
+  })
+
   .get('/stream/:songId', async (c) => {
     const songId = c.req.param('songId');
     if (!songId || !CONFIG.YOUTUBE_ID_REGEX.test(songId)) {

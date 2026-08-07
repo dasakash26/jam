@@ -37,16 +37,18 @@ export function HelpDialog({ className }: { className?: string }) {
         </DialogHeader>
 
         <div className="space-y-2 py-1 text-xs min-w-0">
-          {/* Step 1: Search */}
+          {/* Step 1: Search & Playlists */}
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/30 border border-border/40 min-w-0">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/25">
               <Search className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-              <span className="font-semibold text-foreground truncate">Search & Queue Tracks</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-muted-foreground shrink-0">⌘K</kbd>
+              <span className="font-semibold text-foreground truncate">Search or Playlist</span>
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0">Paste link or ⌘K</span>
             </div>
           </div>
+
+
 
           {/* Step 2: Create Room */}
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/30 border border-border/40 min-w-0">

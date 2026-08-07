@@ -1,7 +1,7 @@
 export interface User {
   userId: string
   userName: string
-  timeOutId?: ReturnType<typeof setTimeout>
+  pingedAt: number
 }
 
 export interface Music {

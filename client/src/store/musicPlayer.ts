@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { searchMusic } from '#/utils/api'
+import { fetchPlaylist, searchMusic } from '#/utils/api'
 import type { Music, QueueItem } from '#/types'
 import { toast } from 'sonner'
-import { safeUUID } from '#/utils/uuid'
+import { generateId } from '#/utils/uuid'
 
 interface MusicPlayer {
   query: string
@@ -17,7 +17,7 @@ interface MusicPlayer {
   setHasHydrated: (h: boolean) => void
   setQuery: (q: string) => void
   executeQuery: () => void
-  pushToQueue: (m: Music) => void
+  pushToQueue: (items: Music | Music[]) => void
   playNextTrack: (m: Music) => void
   popFromQueue: () => void
   playPrevious: () => void
@@ -49,7 +49,7 @@ export const useMusicPlayer = create<MusicPlayer>()(
 
       executeQuery: async () => {
         if (searchTimeoutId) clearTimeout(searchTimeoutId)
-        const q = get().query
+        const q = get().query.trim()
 
         if (!q) {
           set({ results: [], isLoading: false, isError: false, error: '' })
@@ -59,37 +59,53 @@ export const useMusicPlayer = create<MusicPlayer>()(
         set({ isLoading: true, isError: false, error: '' })
         searchTimeoutId = setTimeout(async () => {
           try {
-            const res = await searchMusic(q)
-            if (get().query !== q) return
+            const isPlaylist = /[?&]list=/.test(q) || /^PL[a-zA-Z0-9_-]+$/.test(q)
+            const res = isPlaylist ? await fetchPlaylist(q) : await searchMusic(q)
+            if (get().query.trim() !== q) return
             set({ results: res, isLoading: false, isError: false, error: '' })
-            toast.success(`Results for "${q}"`, {
-              description: `${res.length} ${res.length === 1 ? 'track' : 'tracks'} ready to play`,
+            toast.success(isPlaylist ? 'Playlist Loaded' : `Results for "${q}"`, {
+              description: `${res.length} ${res.length === 1 ? 'track' : 'tracks'} loaded`,
             })
           } catch (e: unknown) {
-            if (get().query !== q) return
+            if (get().query.trim() !== q) return
             const errorMsg = e instanceof Error ? e.message : String(e)
             set({ error: errorMsg, isLoading: false, isError: true })
-            toast.error('Search Failed', {
+            toast.error('Search / Import Failed', {
               description: errorMsg,
             })
           }
         }, 400)
       },
 
-      pushToQueue: (m: Music) => {
-        const item: QueueItem = { queueItemId: safeUUID(), track: m }
-        set((s) => ({ queue: [...s.queue, item] }))
-        toast('Added to Queue', {
-          description: `${m.title} • ${m.uploader}`,
-        })
+      pushToQueue: (items: Music | Music[]) => {
+        const tracks = Array.isArray(items) ? items : [items]
+        if (tracks.length === 0) return
+        const newQueueItems: QueueItem[] = tracks.map((m) => ({
+          queueItemId: generateId('item_'),
+          track: m,
+        }))
+        set((s) => ({ queue: [...s.queue, ...newQueueItems] }))
+
+        if (tracks.length === 1 && tracks[0]) {
+          const m = tracks[0]
+          toast('Added to Queue', {
+            description: `${m.title} • ${m.uploader}`,
+          })
+        } else {
+          toast.success('Playlist Added to Queue', {
+            description: `Added ${tracks.length} tracks to queue`,
+          })
+        }
       },
 
+
+
       playNextTrack: (m: Music) => {
-        const item: QueueItem = { queueItemId: safeUUID(), track: m }
+        const item: QueueItem = { queueItemId: generateId('item_'), track: m }
         set((s) => {
           if (s.queue.length === 0) return { queue: [item] }
-          const newQ = [s.queue[0], item, ...s.queue.slice(1)]
-          return { queue: newQ }
+          const upcoming = s.queue.slice(1).filter((q) => q.track.id !== m.id)
+          return { queue: [s.queue[0], item, ...upcoming] }
         })
         toast('Playing Next', {
           description: `${m.title} • ${m.uploader}`,
@@ -141,7 +157,7 @@ export const useMusicPlayer = create<MusicPlayer>()(
       }),
       onRehydrateStorage: () => (state) => {
         const ensureQueueItem = (item: any): QueueItem =>
-          item?.track ? item : { queueItemId: safeUUID(), track: item }
+          item?.track ? item : { queueItemId: generateId('item_'), track: item }
 
         if (state?.queue) state.queue = state.queue.map(ensureQueueItem)
         if (state?.history) state.history = state.history.map(ensureQueueItem)

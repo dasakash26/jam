@@ -23,12 +23,18 @@ interface QItemCardProps {
 export function QItemCard({
   item,
   isCurrent,
+  isHistory,
   canRemove,
   onAddToQueue,
   onPlayNext,
   onRemove,
 }: QItemCardProps) {
   const { track: song, queueItemId, addedBy } = item
+
+  const showPlayNext = Boolean(onPlayNext && !isCurrent)
+  const showAddToQueue = Boolean(onAddToQueue && !isCurrent && isHistory)
+  const showRemove = Boolean(canRemove && onRemove && !isCurrent)
+  const hasActions = showPlayNext || showAddToQueue || showRemove
 
   return (
     <div className="group flex items-center gap-2.5 rounded-lg p-1.5 sm:p-1 transition-colors hover:bg-muted/50">
@@ -72,7 +78,7 @@ export function QItemCard({
           {formatDuration(song.duration)}
         </span>
 
-        {canRemove && onRemove && (
+        {showRemove && (
           <button
             onClick={() => onRemove(queueItemId)}
             className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -82,43 +88,45 @@ export function QItemCard({
           </button>
         )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            title="Track options"
-          >
-            <MoreVertical className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {onPlayNext && (
-              <DropdownMenuItem
-                onClick={() => onPlayNext(song)}
-                className="cursor-pointer text-xs flex items-center gap-2"
-              >
-                <ListPlus className="h-3.5 w-3.5 text-primary" />
-                Play Next
-              </DropdownMenuItem>
-            )}
-            {onAddToQueue && (
-              <DropdownMenuItem
-                onClick={() => onAddToQueue(song)}
-                className="cursor-pointer text-xs flex items-center gap-2"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add to Queue
-              </DropdownMenuItem>
-            )}
-            {canRemove && onRemove && (
-              <DropdownMenuItem
-                onClick={() => onRemove(queueItemId)}
-                className="cursor-pointer text-xs text-destructive flex items-center gap-2 focus:text-destructive"
-              >
-                <X className="h-3.5 w-3.5" />
-                Remove
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {hasActions && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              title="Track options"
+            >
+              <MoreVertical className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {showPlayNext && (
+                <DropdownMenuItem
+                  onClick={() => onPlayNext(song)}
+                  className="cursor-pointer text-xs flex items-center gap-2"
+                >
+                  <ListPlus className="h-3.5 w-3.5 text-primary" />
+                  Play Next
+                </DropdownMenuItem>
+              )}
+              {showAddToQueue && (
+                <DropdownMenuItem
+                  onClick={() => onAddToQueue(song)}
+                  className="cursor-pointer text-xs flex items-center gap-2"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add to Queue
+                </DropdownMenuItem>
+              )}
+              {showRemove && (
+                <DropdownMenuItem
+                  onClick={() => onRemove(queueItemId)}
+                  className="cursor-pointer text-xs text-destructive flex items-center gap-2 focus:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Remove
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   )

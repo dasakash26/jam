@@ -179,7 +179,7 @@ export function JoinRoom() {
                 <Input
                   id="joinRoomId"
                   name="joinRoomId"
-                  placeholder="Paste Room ID (UUID)..."
+                  placeholder="Paste Room ID (e.g. room_a8k3z2)..."
                   value={joinRoomId}
                   onChange={(e) => setJoinRoomId(e.target.value)}
                   required

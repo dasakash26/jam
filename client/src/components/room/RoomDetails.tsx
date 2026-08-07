@@ -61,7 +61,9 @@ export function RoomDetails() {
             className="flex items-center gap-1.5 px-3 py-1.5 h-9 text-xs font-semibold cursor-pointer border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl"
           >
             <Radio className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="max-w-[140px] sm:max-w-[180px] truncate">{room?.name || 'Room Details'}</span>
+            <span className="max-w-[140px] sm:max-w-[180px] truncate">
+              {room?.name || 'Room Details'}
+            </span>
             {room?.users && (
               <span className="ml-0.5 flex h-4.5 min-w-4.5 px-1 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-mono font-bold">
                 {room.users.length}
@@ -75,7 +77,9 @@ export function RoomDetails() {
         <DialogHeader className="space-y-1 min-w-0">
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground min-w-0">
             <Radio className="h-4 w-4 text-primary shrink-0" />
-            <span className="truncate min-w-0 flex-1">{room?.name || 'Room Details'}</span>
+            <span className="truncate min-w-0 flex-1">
+              {room?.name || 'Room Details'}
+            </span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             Share this room with friends to listen together in real-time.
@@ -98,7 +102,11 @@ export function RoomDetails() {
                 onClick={handleCopyLink}
                 className="h-7 px-3 text-xs font-medium cursor-pointer shrink-0 rounded-lg flex items-center gap-1.5 bg-background/50 hover:bg-background border-border/60 text-foreground"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
@@ -123,7 +131,9 @@ export function RoomDetails() {
                       {user.userName.charAt(0).toUpperCase()}
                       <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
                     </div>
-                    <span className="font-medium text-foreground truncate block min-w-0 flex-1">{user.userName}</span>
+                    <span className="font-medium text-foreground truncate block min-w-0 flex-1">
+                      {user.userName}
+                    </span>
                   </div>
                   {user.userId === userId && (
                     <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold shrink-0">
